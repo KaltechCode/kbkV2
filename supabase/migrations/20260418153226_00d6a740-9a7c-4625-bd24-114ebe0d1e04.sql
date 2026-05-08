@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.seed_abandonment_cron_secret(text);
