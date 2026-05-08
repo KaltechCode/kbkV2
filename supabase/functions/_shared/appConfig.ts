@@ -1,7 +1,7 @@
 // Centralized public, non-secret config for Edge Functions.
 // Keep in sync with src/config/appConfig.ts (Edge Functions cannot import from src/).
 export const AppConfig = {
-  BASE_URL: "https://kbklegacyshield.com",
+  BASE_URL: "https://kbk-v2.vercel.app",
   EMAIL_REPLY_TO: "test@kaltechconsultancy.tech",
 
   ROUTES: {
@@ -17,6 +17,7 @@ export const AppConfig = {
     "https://legacy-shield-suite.lovable.app",
     "https://kbklegacyshield.com",
     "https://www.kbklegacyshield.com",
+    "https://kbk-v2.vercel.app",
     // Localhost for local development
     "http://localhost:5173",
     "http://localhost:3000",

@@ -9,7 +9,10 @@ const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || "";
 // does not include `execute`, but the Cloudflare API exposes it. Cast at
 // the call site rather than mutating the shared global declaration.
 type TurnstileWithExecute = NonNullable<Window["turnstile"]> & {
-  execute: (container: string | HTMLElement | string, options?: { action?: string }) => void;
+  execute: (
+    container: string | HTMLElement | string,
+    options?: { action?: string },
+  ) => void;
 };
 
 // Global onload callback registered before the Cloudflare api.js script is
@@ -68,7 +71,7 @@ function loadTurnstileScript(): Promise<void> {
     // mount before window.turnstile was attached), do not inject another.
     // Our onload callback will still fire when that script finishes.
     const existing = document.querySelector(
-      'script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]'
+      'script[src*="challenges.cloudflare.com/turnstile/v0/api.js"]',
     ) as HTMLScriptElement | null;
     if (existing) {
       return;
@@ -81,7 +84,9 @@ function loadTurnstileScript(): Promise<void> {
     script.defer = true;
     script.onerror = () => {
       scriptLoadPromise = null; // allow retry on next call
-      reject(new TurnstileError("script_load", "Failed to load Turnstile script"));
+      reject(
+        new TurnstileError("script_load", "Failed to load Turnstile script"),
+      );
     };
     document.head.appendChild(script);
   });
@@ -98,7 +103,9 @@ export function ensureTurnstileReady(): Promise<void> {
 
   readyPromise = (async () => {
     if (!TURNSTILE_SITE_KEY) {
-      console.warn("[Turnstile] No site key configured — skipping verification");
+      console.warn(
+        "[Turnstile] No site key configured — skipping verification",
+      );
       return;
     }
 
@@ -119,7 +126,9 @@ export function isTurnstileReady(): boolean {
  *
  * Caller MUST await ensureTurnstileReady() before calling this.
  */
-export async function getInvisibleTurnstileToken(timeoutMs = 15000): Promise<string> {
+export async function getInvisibleTurnstileToken(
+  timeoutMs = 15000,
+): Promise<string> {
   if (!TURNSTILE_SITE_KEY) {
     console.warn("[Turnstile] No site key configured, skipping verification");
     return "";
@@ -133,6 +142,8 @@ export async function getInvisibleTurnstileToken(timeoutMs = 15000): Promise<str
     container.style.top = "-9999px";
     container.style.left = "-9999px";
     container.style.visibility = "hidden";
+    container.style.width = "0px";
+    container.style.height = "0px";
     document.body.appendChild(container);
 
     let widgetId: string | null = null;
@@ -140,16 +151,25 @@ export async function getInvisibleTurnstileToken(timeoutMs = 15000): Promise<str
 
     const cleanup = () => {
       if (widgetId && window.turnstile) {
-        try { window.turnstile.remove(widgetId); } catch {}
+        try {
+          window.turnstile.remove(widgetId);
+        } catch {}
       }
-      container.remove();
+      try {
+        container.remove();
+      } catch {}
     };
 
     const timeoutHandle = window.setTimeout(() => {
       if (settled) return;
       settled = true;
       cleanup();
-      reject(new TurnstileError("timeout", "Bot verification timed out. Please refresh and try again."));
+      reject(
+        new TurnstileError(
+          "timeout",
+          "Bot verification timed out. Please refresh and try again.",
+        ),
+      );
     }, timeoutMs);
 
     const finish = (fn: () => void) => {
@@ -162,36 +182,85 @@ export async function getInvisibleTurnstileToken(timeoutMs = 15000): Promise<str
 
     try {
       const api = window.turnstile as unknown as TurnstileWithExecute;
+      if (!api || typeof api.render !== "function") {
+        finish(() =>
+          reject(new TurnstileError("render", "Turnstile API not available")),
+        );
+        return;
+      }
+
       widgetId = api.render(container, {
         sitekey: TURNSTILE_SITE_KEY,
         callback: (token: string) => {
-          console.log("[Turnstile] token received");
+          if (!token || token.trim() === "") {
+            console.warn("[Turnstile] Empty token received");
+            finish(() =>
+              reject(
+                new TurnstileError("render", "Turnstile returned empty token"),
+              ),
+            );
+            return;
+          }
+          console.log("[Turnstile] token received", {
+            tokenLength: token.length,
+          });
           finish(() => resolve(token));
         },
         "error-callback": () => {
           console.warn("[Turnstile] error-callback fired");
-          finish(() => reject(new TurnstileError("error_callback", "Turnstile verification failed")));
+          finish(() =>
+            reject(
+              new TurnstileError(
+                "error_callback",
+                "Turnstile verification failed",
+              ),
+            ),
+          );
         },
         "expired-callback": () => {
           console.warn("[Turnstile] expired-callback fired");
-          finish(() => reject(new TurnstileError("expired", "Turnstile token expired during verification")));
+          finish(() =>
+            reject(
+              new TurnstileError(
+                "expired",
+                "Turnstile token expired during verification",
+              ),
+            ),
+          );
         },
         theme: "auto",
         // Invisible mode: widget renders no UI; a token is only produced when
         // execute() is called explicitly below.
         size: "invisible",
-      } as unknown as Parameters<NonNullable<Window["turnstile"]>["render"]>[1]);
+      } as unknown as Parameters<
+        NonNullable<Window["turnstile"]>["render"]
+      >[1]);
       console.log("[Turnstile] widget rendered (invisible)", { widgetId });
 
       // Invisible widgets do NOT auto-challenge — must call execute().
-      try {
-        api.execute(widgetId as unknown as string);
-        console.log("[Turnstile] execute() called");
-      } catch (execErr) {
-        finish(() => reject(new TurnstileError("render", "Turnstile execute() failed")));
+      if (typeof api.execute === "function") {
+        try {
+          api.execute(widgetId as unknown as string);
+          console.log("[Turnstile] execute() called successfully");
+        } catch (execErr) {
+          console.error("[Turnstile] execute() error:", execErr);
+          finish(() =>
+            reject(new TurnstileError("render", "Turnstile execute() failed")),
+          );
+        }
+      } else {
+        console.error("[Turnstile] execute() method not available");
+        finish(() =>
+          reject(
+            new TurnstileError("render", "Turnstile execute() not available"),
+          ),
+        );
       }
     } catch (err) {
-      finish(() => reject(new TurnstileError("render", "Turnstile render failed")));
+      console.error("[Turnstile] render error:", err);
+      finish(() =>
+        reject(new TurnstileError("render", "Turnstile render failed")),
+      );
     }
   });
 }
