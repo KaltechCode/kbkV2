@@ -15,7 +15,6 @@ export const AppConfig = {
   },
 
   ALLOWED_ORIGINS: [
-    "https://legacy-shield-suite.lovable.app",
     "https://kbklegacyshield.com",
     "https://www.kbklegacyshield.com",
     // Localhost for local development

@@ -14,7 +14,6 @@ export const AppConfig = {
   },
 
   ALLOWED_ORIGINS: [
-    "https://legacy-shield-suite.lovable.app",
     "https://kbklegacyshield.com",
     "https://www.kbklegacyshield.com",
     "https://kbk-v2.vercel.app",
