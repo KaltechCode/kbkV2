@@ -96,128 +96,14 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Parse and validate request body
-    let requestBody: Record<string, unknown>;
-    try {
-      const contentType = req.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        console.warn(
-          `Invalid Content-Type: ${contentType}. Expected application/json`,
-        );
-        // Still try to parse as JSON, but warn about it
-      }
-
-      const rawBody = await req.text();
-      if (!rawBody.trim()) {
-        return new Response(
-          JSON.stringify({
-            error: "Missing request body",
-            details:
-              "Request body must be valid JSON with Content-Type: application/json",
-            example: {
-              firstName: "John",
-              lastName: "Doe",
-              phone: "+1234567890",
-              email: "john@example.com",
-              turnstile_token: "token_here",
-            },
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      const parsedBody = JSON.parse(rawBody);
-      if (
-        !parsedBody ||
-        typeof parsedBody !== "object" ||
-        Array.isArray(parsedBody)
-      ) {
-        return new Response(
-          JSON.stringify({
-            error: "Invalid request format",
-            details: "Request body must be a JSON object",
-            example: {
-              firstName: "John",
-              lastName: "Doe",
-              phone: "+1234567890",
-              email: "john@example.com",
-              turnstile_token: "token_here",
-            },
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-
-      requestBody = parsedBody as Record<string, unknown>;
-    } catch (parseError) {
-      console.error("JSON parsing error:", parseError);
-      return new Response(
-        JSON.stringify({
-          error: "Invalid request format",
-          details:
-            "Request body must be valid JSON with Content-Type: application/json",
-          example: {
-            firstName: "John",
-            lastName: "Doe",
-            phone: "+1234567890",
-            email: "john@example.com",
-            turnstile_token: "token_here",
-          },
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    // Destructure with validation
-    const { firstName, lastName, phone, email, turnstile_token } = requestBody;
-
-    // Validate that all required fields are provided
-    const missingFields = [];
-    if (!firstName) missingFields.push("firstName");
-    if (!lastName) missingFields.push("lastName");
-    if (!phone) missingFields.push("phone");
-    if (!email) missingFields.push("email");
-    // TEMPORARILY DISABLED FOR TESTING - turnstile_token is now optional
-    // if (!turnstile_token) missingFields.push("turnstile_token");
-
-    if (missingFields.length > 0) {
-      return new Response(
-        JSON.stringify({
-          error: "Missing required fields",
-          missingFields: missingFields,
-          required: [
-            "firstName",
-            "lastName",
-            "phone",
-            "email",
-            // TEMPORARILY DISABLED FOR TESTING
-            // "turnstile_token",
-          ],
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-
-    const clientIP = getClientIP(req);
+    const { firstName, lastName, phone, email, turnstile_token } =
+      await req.json();
 
     // SECURITY: Verify Turnstile token FIRST before any other processing
-    // TEMPORARILY DISABLED FOR TESTING - REMOVE THIS IN PRODUCTION
-    /*
     if (!turnstile_token) {
       return new Response(
         JSON.stringify({
+          success: false,
           error: "Verification required. Please complete the security check.",
         }),
         {
@@ -227,6 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    const clientIP = getClientIP(req);
     const turnstileValid = await verifyTurnstileToken(
       turnstile_token,
       clientIP,
@@ -234,55 +121,48 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!turnstileValid) {
       return new Response(
-        JSON.stringify({ error: "Verification failed. Please try again." }),
+        JSON.stringify({
+          success: false,
+          error: "Verification failed. Please try again.",
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
     }
-    */
 
-    // Apply rate limiting: per-IP and per-email
-    const rateLimitResponse = applyRateLimits(
-      [
-        {
-          key: clientIP,
-          config: { ...RateLimitPresets.STANDARD, keyPrefix: "create_lead_ip" },
-        },
-        {
-          key: email.toLowerCase(),
-          config: {
-            ...RateLimitPresets.HOURLY_STRICT,
-            keyPrefix: "create_lead_email",
-          },
-        },
-      ],
-      corsHeaders,
-    );
+    // Apply rate limiting: per-IP and per-email (after Turnstile verification)
+    // const rateLimitResponse = applyRateLimits(
+    //   [
+    //     {
+    //       key: clientIP,
+    //       config: { ...RateLimitPresets.STANDARD, keyPrefix: "create_lead_ip" },
+    //     },
+    //     {
+    //       key: email.toLowerCase(),
+    //       config: {
+    //         ...RateLimitPresets.HOURLY_STRICT,
+    //         keyPrefix: "create_lead_email",
+    //       },
+    //     },
+    //   ],
+    //   corsHeaders,
+    // );
 
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
+    // if (rateLimitResponse) {
+    //   return rateLimitResponse;
+    // }
 
-    // Validate field values (trim and check)
-    const trimmedFields = {
-      firstName: firstName?.trim(),
-      lastName: lastName?.trim(),
-      phone: phone?.trim(),
-      email: email?.trim(),
-    };
-
-    const emptyFields = Object.entries(trimmedFields)
-      .filter(([, value]) => !value)
-      .map(([key]) => key);
-
-    if (emptyFields.length > 0) {
+    // Validate required fields
+    if (
+      !firstName?.trim() ||
+      !lastName?.trim() ||
+      !phone?.trim() ||
+      !email?.trim()
+    ) {
       return new Response(
-        JSON.stringify({
-          error: "Fields cannot be empty",
-          emptyFields: emptyFields,
-        }),
+        JSON.stringify({ success: false, error: "All fields are required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -292,13 +172,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedFields.email)) {
+    if (!emailRegex.test(email.trim())) {
       return new Response(
-        JSON.stringify({
-          error: "Invalid email format",
-          received: trimmedFields.email,
-          expected: "valid email address (e.g., user@example.com)",
-        }),
+        JSON.stringify({ success: false, error: "Invalid email format" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -308,13 +184,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Validate phone format
     const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
-    if (!phoneRegex.test(trimmedFields.phone)) {
+    if (!phoneRegex.test(phone.trim())) {
       return new Response(
         JSON.stringify({
+          success: false,
           error: "Invalid phone number format",
-          received: trimmedFields.phone,
-          expected:
-            "Phone number with 10-15 digits (can include +, -, (), spaces)",
         }),
         {
           status: 400,
@@ -324,10 +198,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Check rate limit
-    const normalizedEmail = trimmedFields.email.toLowerCase();
+    const normalizedEmail = email.trim().toLowerCase();
     if (!checkRateLimit(normalizedEmail)) {
       return new Response(
         JSON.stringify({
+          success: false,
           error: "Rate limit exceeded. Please try again later.",
         }),
         {
@@ -353,15 +228,21 @@ const handler = async (req: Request): Promise<Response> => {
     let userId = null;
 
     if (authHeader) {
-      const supabaseClient = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-        { global: { headers: { Authorization: authHeader } } },
-      );
-      const {
-        data: { user },
-      } = await supabaseClient.auth.getUser();
-      userId = user?.id || null;
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const {
+          data: { user },
+        } = await supabaseClient.auth.getUser();
+        userId = user?.id || null;
+      } catch (authError) {
+        // JWT validation failed or other auth error - continue without user association
+        console.warn("Could not retrieve user from auth header:", authError);
+        userId = null;
+      }
     }
 
     // Create or update lead
@@ -369,9 +250,9 @@ const handler = async (req: Request): Promise<Response> => {
       .from("leads")
       .upsert(
         {
-          first_name: trimmedFields.firstName,
-          last_name: trimmedFields.lastName,
-          phone: trimmedFields.phone,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          phone: phone.trim(),
           email: normalizedEmail,
           email_verified: false,
           verification_code_hash: hashedCode,
@@ -396,7 +277,7 @@ const handler = async (req: Request): Promise<Response> => {
       {
         body: {
           email: normalizedEmail,
-          firstName: trimmedFields.firstName,
+          firstName: firstName.trim(),
           code: code,
         },
       },
@@ -421,7 +302,10 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error) {
     console.error("Error in create-lead function:", error);
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred." }),
+      JSON.stringify({
+        success: false,
+        error: "An unexpected error occurred.",
+      }),
       {
         status: 500,
         headers: {

@@ -15,7 +15,6 @@ export const AppConfig = {
 
   ALLOWED_ORIGINS: [
     "https://kbklegacyshield.com",
-    "https://www.kbklegacyshield.com",
     "https://kbk-v2.vercel.app",
     // Localhost for local development
     "http://localhost:5173",
