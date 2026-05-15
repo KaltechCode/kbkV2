@@ -11,7 +11,8 @@ export const AppConfig = {
   },
 
   STRIPE: {
-    PAYMENT_LINK: "https://buy.stripe.com/6oU5kF2Xb8FAd0QfWj2Ji00",
+    // PAYMENT_LINK: "https://buy.stripe.com/6oU5kF2Xb8FAd0QfWj2Ji00",
+    PAYMENT_LINK: "https://buy.stripe.com/test_bJe9AT27meYc48I2vtgIo00",
   },
 
   ALLOWED_ORIGINS: [
