@@ -79,7 +79,7 @@ const Metric = () => {
   }
 
   if (error && typeof error !== "string" && error.type) {
-    return <Navigate to="/v" replace />;
+    return <Navigate to="/visualization" replace />;
   } else if (error) {
     const errorMessage =
       typeof error === "string"

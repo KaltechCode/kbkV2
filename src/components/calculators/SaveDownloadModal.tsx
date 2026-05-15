@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, CheckCircle2, Mail, AlertTriangle, ArrowRight } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  Mail,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface SaveDownloadModalProps {
@@ -20,14 +31,14 @@ interface SaveDownloadModalProps {
   calculatorType?: "fin" | "dime";
 }
 
-export const SaveDownloadModal = ({ 
-  open, 
-  onOpenChange, 
+export const SaveDownloadModal = ({
+  open,
+  onOpenChange,
   leadId,
   email,
   firstName,
   reportData,
-  calculatorType = "fin"
+  calculatorType = "fin",
 }: SaveDownloadModalProps) => {
   const [saving, setSaving] = useState(false);
   const [reportSaved, setReportSaved] = useState(false);
@@ -54,15 +65,17 @@ export const SaveDownloadModal = ({
       });
 
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || "Failed to save report");
+      if (!data?.success)
+        throw new Error(data?.error || "Failed to save report");
 
       setReportSaved(true);
 
       // Email report
       setEmailing(true);
-      const { data: emailData, error: emailError } = await supabase.functions.invoke("email-fin-report", {
-        body: { leadId, calculatorType },
-      });
+      const { data: emailData, error: emailError } =
+        await supabase.functions.invoke("email-fin-report", {
+          body: { leadId, calculatorType },
+        });
 
       if (emailError) throw emailError;
       if (emailData?.success) {
@@ -101,10 +114,12 @@ export const SaveDownloadModal = ({
                 <CheckCircle2 className="w-8 h-8 text-primary" />
               </div>
               <DialogTitle className="text-xl font-heading text-primary text-center leading-snug">
-                Your Results Are On The Way — But This Is Only Surface-Level Insight
+                Your Results Are On The Way — But This Is Only Surface-Level
+                Insight
               </DialogTitle>
               <p className="text-sm text-muted-foreground text-center mt-2">
-                This estimate shows what is possible, but it does not reveal what could break your plan.
+                This estimate shows what is possible, but it does not reveal
+                what could break your plan.
               </p>
             </DialogHeader>
 
@@ -133,12 +148,11 @@ export const SaveDownloadModal = ({
                   </li>
                 </ul>
 
-                <Button 
-                  size="lg" 
-                  className="w-full mt-2"
-                  asChild
-                >
-                  <Link to="/financial-stability-stress-test">
+                <Button size="lg" className="w-full mt-2" asChild>
+                  <Link
+                    to="/financial-stability-stress-test#intake-form"
+                    onClick={() => onOpenChange(false)}
+                  >
                     Run My Full Financial Stress Test
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
