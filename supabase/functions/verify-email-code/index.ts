@@ -30,20 +30,6 @@ const handler = async (req: Request): Promise<Response> => {
   // SECURITY: Unified generic error response for ALL OTP verification failures.
   // Never distinguish between wrong code, expired code, no code, missing lead,
   // or locked state — that information leaks signal to attackers.
-  const GENERIC_OTP_ERROR =
-    "Invalid or expired code. Please try again or request a new one.";
-  const genericFailure = (status = 400) =>
-    new Response(
-      JSON.stringify({
-        verified: false,
-        success: false,
-        error: GENERIC_OTP_ERROR,
-      }),
-      {
-        status,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
 
   try {
     // Parse request body once at the beginning
@@ -51,18 +37,48 @@ const handler = async (req: Request): Promise<Response> => {
       await req.json();
 
     if (!email || !code) {
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Email and Code are required",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Invalid email format",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Validate code format (must be 6 digits)
     if (!/^\d{6}$/.test(code)) {
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Invalid Code format",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -80,7 +96,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (fetchError || !lead) {
       console.error("Lead not found or error:", fetchError);
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Lead not found",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Check if code is expired
@@ -89,7 +115,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (currentTime > expiresAt) {
       console.log("Code expired");
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Code Expired",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Hash the provided code and compare
@@ -97,7 +133,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (hashedCode !== lead.verification_code_hash) {
       console.log(`Invalid code attempt for ${email}`);
-      return genericFailure();
+      return new Response(
+        JSON.stringify({
+          verified: false,
+          success: false,
+          error: "Invalid code attempt for email",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
 
     // Mark email as verified
@@ -133,7 +179,17 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("Error verifying code:", error);
-    return genericFailure(500);
+    return new Response(
+      JSON.stringify({
+        verified: false,
+        success: false,
+        error: "Error verifying code",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
   }
 };
 

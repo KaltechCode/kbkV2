@@ -1,14 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import {
-  getClientIP,
-  applyRateLimits,
-  RateLimitPresets,
-} from "../_shared/rateLimit.ts";
+
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildUnifiedEmail } from "../_shared/emailTemplate.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 interface EmailReportRequest {
   leadId: string;
@@ -200,23 +196,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Apply rate limiting
-    const clientIP = getClientIP(req);
-    const rateLimitResponse = applyRateLimits(
-      [
-        {
-          key: clientIP,
-          config: {
-            ...RateLimitPresets.STANDARD,
-            keyPrefix: "email_report_ip",
-          },
-        },
-      ],
-      corsHeaders,
-    );
-
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
 
     // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -346,7 +325,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const emailResponse = await clients.send({
+    const emailResponse = await transporter.sendMail({
       from: Deno.env.get("EMAIL_FROM")!,
       to: [lead.email],
       subject: emailSubject,

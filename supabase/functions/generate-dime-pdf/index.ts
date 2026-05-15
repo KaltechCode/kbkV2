@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { getClientIP, applyRateLimits, RateLimitPresets } from "../_shared/rateLimit.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 
 interface GeneratePDFRequest {
@@ -17,34 +16,30 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     // Apply rate limiting: per-IP
-    const clientIP = getClientIP(req);
-    const ipRateLimitResponse = applyRateLimits([
-      {
-        key: clientIP,
-        config: { ...RateLimitPresets.LENIENT, keyPrefix: 'gen_dime_pdf_ip' }
-      }
-    ], corsHeaders);
-    
-    if (ipRateLimitResponse) {
-      return ipRateLimitResponse;
-    }
 
     const { leadId }: GeneratePDFRequest = await req.json();
 
     // Validate leadId is provided
     if (!leadId) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Lead ID is required' }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "Lead ID is required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     // Validate leadId format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(leadId)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Invalid leadId format' }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "Invalid leadId format" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -55,10 +50,13 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("Missing Supabase environment variables");
       return new Response(
         JSON.stringify({ success: false, error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
-    
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get lead information and verify email was verified
@@ -71,16 +69,22 @@ const handler = async (req: Request): Promise<Response> => {
     if (leadError) {
       console.error("Error fetching lead:", leadError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to fetch lead' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "Failed to fetch lead" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     if (!lead) {
       console.error("Lead not found:", leadId);
       return new Response(
-        JSON.stringify({ success: false, error: 'Lead not found' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ success: false, error: "Lead not found" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
@@ -88,21 +92,15 @@ const handler = async (req: Request): Promise<Response> => {
     if (!lead.email_verified) {
       console.error("Email not verified for lead:", leadId);
       return new Response(
-        JSON.stringify({ success: false, error: 'Email verification required' }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: false,
+          error: "Email verification required",
+        }),
+        {
+          status: 403,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
-    }
-
-    // Apply per-lead rate limiting to prevent abuse
-    const leadRateLimitResponse = applyRateLimits([
-      {
-        key: leadId,
-        config: { ...RateLimitPresets.LENIENT, keyPrefix: 'gen_dime_pdf_lead' }
-      }
-    ], corsHeaders);
-    
-    if (leadRateLimitResponse) {
-      return leadRateLimitResponse;
     }
 
     // Fetch the most recent DIME report for this lead from the database
@@ -117,52 +115,78 @@ const handler = async (req: Request): Promise<Response> => {
     if (reportError) {
       console.error("Error fetching report:", reportError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to fetch report data' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: false,
+          error: "Failed to fetch report data",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
     if (!report) {
       console.error("No report found for lead:", leadId);
       return new Response(
-        JSON.stringify({ success: false, error: 'No report found. Please save your report first.' }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: false,
+          error: "No report found. Please save your report first.",
+        }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
       );
     }
 
-    console.log("Generating DIME PDF for verified lead:", leadId, "Report:", report.id);
+    console.log(
+      "Generating DIME PDF for verified lead:",
+      leadId,
+      "Report:",
+      report.id,
+    );
 
     // Generate HTML from verified database data
     const htmlContent = generatePDFHTML(lead, {
       inputs: report.inputs_json,
-      results: report.outputs_json
+      results: report.outputs_json,
     });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         reportId: report.id,
         htmlContent,
         lead: {
           firstName: lead.first_name,
           lastName: lead.last_name,
-          email: lead.email
-        }
+          email: lead.email,
+        },
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   } catch (error: any) {
     console.error("Error generating DIME PDF:", error);
     return new Response(
-      JSON.stringify({ success: false, error: "An unexpected error occurred." }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({
+        success: false,
+        error: "An unexpected error occurred.",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   }
 };
 
 function generatePDFHTML(lead: any, reportData: any): string {
   const { inputs, results } = reportData;
-  
+
   return `
     <!DOCTYPE html>
     <html>
@@ -443,11 +467,14 @@ function generatePDFHTML(lead: any, reportData: any): string {
         <div class="footer">
           <p><strong>KB&K Financial Services</strong></p>
           <p>Empowering Your Financial Future</p>
-          <p style="margin-top: 10px;">Generated on ${new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
+          <p style="margin-top: 10px;">Generated on ${new Date().toLocaleDateString(
+            "en-US",
+            {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            },
+          )}</p>
         </div>
       </body>
     </html>
@@ -455,9 +482,9 @@ function generatePDFHTML(lead: any, reportData: any): string {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
