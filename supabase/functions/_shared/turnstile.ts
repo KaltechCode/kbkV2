@@ -14,23 +14,13 @@ export async function verifyTurnstileToken(
     return false;
   }
 
-  if (!token || token.trim() === "") {
-    console.error("Empty Turnstile token provided");
-    return false;
-  }
-
   try {
     const formData = new URLSearchParams();
     formData.append("secret", secretKey);
-    formData.append("response", token.trim());
-    if (remoteip && remoteip.trim() !== "") {
-      formData.append("remoteip", remoteip.trim());
+    formData.append("response", token);
+    if (remoteip) {
+      formData.append("remoteip", remoteip);
     }
-
-    console.log("Sending Turnstile verification request", {
-      hasToken: !!token,
-      hasSecret: !!secretKey,
-    });
 
     const response = await fetch(
       "https://challenges.cloudflare.com/turnstile/v0/siteverify",
@@ -41,24 +31,11 @@ export async function verifyTurnstileToken(
       },
     );
 
-    if (!response.ok) {
-      console.error(
-        `Turnstile API error: ${response.status} ${response.statusText}`,
-      );
-      const errorText = await response.text();
-      console.error("Response body:", errorText);
-      return false;
-    }
-
     const result = await response.json();
     console.log("Turnstile verification result:", {
       success: result.success,
       errorCodes: result["error-codes"],
     });
-
-    if (!result.success && result["error-codes"]) {
-      console.error("Turnstile error codes:", result["error-codes"]);
-    }
 
     return result.success === true;
   } catch (error) {

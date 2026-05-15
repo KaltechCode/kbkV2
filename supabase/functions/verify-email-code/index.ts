@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
-import { getClientIP, applyRateLimits, resetRateLimit } from "../_shared/rateLimit.ts";
+
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { verifyTurnstileToken, turnstileErrorResponse } from "../_shared/turnstile.ts";
 
 interface VerifyCodeRequest {
   email: string;
@@ -17,9 +16,8 @@ async function hashCode(code: string): Promise<string> {
   const data = encoder.encode(code);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
-
 
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get("origin");
@@ -36,14 +34,22 @@ const handler = async (req: Request): Promise<Response> => {
     "Invalid or expired code. Please try again or request a new one.";
   const genericFailure = (status = 400) =>
     new Response(
-      JSON.stringify({ verified: false, success: false, error: GENERIC_OTP_ERROR }),
-      { status, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      JSON.stringify({
+        verified: false,
+        success: false,
+        error: GENERIC_OTP_ERROR,
+      }),
+      {
+        status,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
 
   try {
     // Parse request body once at the beginning
-    const { email, code, turnstile_token }: VerifyCodeRequest = await req.json();
-    
+    const { email, code, turnstile_token }: VerifyCodeRequest =
+      await req.json();
+
     if (!email || !code) {
       return genericFailure();
     }
@@ -59,41 +65,16 @@ const handler = async (req: Request): Promise<Response> => {
       return genericFailure();
     }
 
-    // Turnstile verification
-    const clientIP = getClientIP(req);
-    if (!turnstile_token || typeof turnstile_token !== "string") {
-      return turnstileErrorResponse("Bot verification failed. Please refresh and try again.", corsHeaders);
-    }
-    const turnstileValid = await verifyTurnstileToken(turnstile_token, clientIP);
-    if (!turnstileValid) {
-      return turnstileErrorResponse("Bot verification failed. Please refresh and try again.", corsHeaders);
-    }
-
-    // Apply rate limiting: per-IP (10/min) and per-email (10/hr)
-    const ipRateLimitResponse = applyRateLimits([
-      {
-        key: clientIP,
-        config: { windowMs: 60 * 1000, maxRequests: 10, keyPrefix: 'verify_code_ip' }
-      },
-      {
-        key: email.toLowerCase(),
-        config: { windowMs: 60 * 60 * 1000, maxRequests: 10, keyPrefix: 'verify_code_email' }
-      }
-    ], corsHeaders);
-    
-    if (ipRateLimitResponse) {
-      return ipRateLimitResponse;
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-
     // Get the lead record
     const { data: lead, error: fetchError } = await supabase
       .from("leads")
-      .select("id, email, first_name, last_name, verification_code_hash, verification_code_expires_at")
+      .select(
+        "id, email, first_name, last_name, verification_code_hash, verification_code_expires_at",
+      )
       .eq("email", email)
       .single();
 
@@ -119,16 +100,13 @@ const handler = async (req: Request): Promise<Response> => {
       return genericFailure();
     }
 
-    // Clear rate limit on successful verification
-    resetRateLimit(email.toLowerCase(), 'verify_code_email');
-
     // Mark email as verified
     const { error: updateError } = await supabase
       .from("leads")
-      .update({ 
+      .update({
         email_verified: true,
         verification_code_hash: null,
-        verification_code_expires_at: null
+        verification_code_expires_at: null,
       })
       .eq("id", lead.id);
 
@@ -140,15 +118,18 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Email verified successfully");
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         verified: true,
         leadId: lead.id,
         email: lead.email,
         firstName: lead.first_name,
-        lastName: lead.last_name
+        lastName: lead.last_name,
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
     );
   } catch (error: any) {
     console.error("Error verifying code:", error);

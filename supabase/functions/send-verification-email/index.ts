@@ -8,7 +8,7 @@ import {
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildUnifiedEmail } from "../_shared/emailTemplate.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 interface VerificationEmailRequest {
   email: string;
@@ -123,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Unable to send verification email",
+          error: "Email Not found",
         }),
         {
           status: 400,
@@ -148,7 +148,7 @@ const handler = async (req: Request): Promise<Response> => {
         "If you didn't request this verification code, you can safely ignore this email.",
     });
 
-    const emailResponse = await clients.send({
+    const emailResponse = await transporter.sendMail({
       from: Deno.env.get("EMAIL_FROM")!,
       to: [email],
       subject: "Verify Your Email - KB&K Legacy Shield",

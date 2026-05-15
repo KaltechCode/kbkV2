@@ -1,29 +1,45 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getInvisibleTurnstileToken } from "@/lib/turnstileInvisible";
-import { Loader2, Mail, ShieldCheck, RefreshCw, AlertTriangle } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  ShieldCheck,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
 
 interface EmailVerificationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   email: string;
   firstName: string;
-  onVerified: (leadId: string, email: string, firstName: string, lastName: string) => void;
+  onVerified: (
+    leadId: string,
+    email: string,
+    firstName: string,
+    lastName: string,
+  ) => void;
   onResendCode: () => void;
 }
 
-export const EmailVerificationModal = ({ 
-  open, 
-  onOpenChange, 
-  email, 
+export const EmailVerificationModal = ({
+  open,
+  onOpenChange,
+  email,
   firstName,
   onVerified,
-  onResendCode
+  onResendCode,
 }: EmailVerificationModalProps) => {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,30 +62,25 @@ export const EmailVerificationModal = ({
     setLoading(true);
 
     try {
-      let turnstileToken = "";
-      try {
-        turnstileToken = await getInvisibleTurnstileToken();
-      } catch (turnstileErr: any) {
-        console.error("[EmailVerificationModal] Turnstile failed:", turnstileErr);
-        toast.error(turnstileErr?.message || "Bot verification failed. Please refresh and try again.");
-        setTurnstileFailed(true);
-        setLoading(false);
-        return;
-      }
       setTurnstileFailed(false);
-      const { data, error } = await supabase.functions.invoke("verify-email-code", {
-        body: {
-          email: email,
-          code: code.trim(),
-          turnstile_token: turnstileToken,
+      const { data, error } = await supabase.functions.invoke(
+        "verify-email-code",
+        {
+          body: {
+            email: email,
+            code: code.trim(),
+          },
         },
-      });
+      );
 
       // SECURITY: Treat any non-success (including non-2xx errors) as a generic
       // OTP failure. Do NOT surface backend error messages.
       if (error || !data?.success) {
         if (error) {
-          console.error("[EmailVerificationModal] verify-email-code error:", error);
+          console.error(
+            "[EmailVerificationModal] verify-email-code error:",
+            error,
+          );
         }
         toast.error(GENERIC_OTP_ERROR);
         return;
@@ -123,7 +134,8 @@ export const EmailVerificationModal = ({
             Verify Your Email
           </DialogTitle>
           <p className="text-sm text-muted-foreground text-center mt-2">
-            We sent a 6-digit code to your email. Enter it below to receive your results.
+            We sent a 6-digit code to your email. Enter it below to receive your
+            results.
           </p>
         </DialogHeader>
 
@@ -136,7 +148,9 @@ export const EmailVerificationModal = ({
             <Input
               id="code"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
               placeholder="000000"
               disabled={loading}
               className="text-center text-2xl font-mono tracking-widest"
@@ -153,7 +167,8 @@ export const EmailVerificationModal = ({
               <div className="flex items-start gap-2 text-sm text-destructive">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                 <p>
-                  Bot verification timed out. Request a new code and try again — no need to start over.
+                  Bot verification timed out. Request a new code and try again —
+                  no need to start over.
                 </p>
               </div>
               <Button

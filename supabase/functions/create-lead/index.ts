@@ -133,26 +133,26 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Apply rate limiting: per-IP and per-email (after Turnstile verification)
-    // const rateLimitResponse = applyRateLimits(
-    //   [
-    //     {
-    //       key: clientIP,
-    //       config: { ...RateLimitPresets.STANDARD, keyPrefix: "create_lead_ip" },
-    //     },
-    //     {
-    //       key: email.toLowerCase(),
-    //       config: {
-    //         ...RateLimitPresets.HOURLY_STRICT,
-    //         keyPrefix: "create_lead_email",
-    //       },
-    //     },
-    //   ],
-    //   corsHeaders,
-    // );
+    const rateLimitResponse = applyRateLimits(
+      [
+        {
+          key: clientIP,
+          config: { ...RateLimitPresets.STANDARD, keyPrefix: "create_lead_ip" },
+        },
+        {
+          key: email.toLowerCase(),
+          config: {
+            ...RateLimitPresets.HOURLY_STRICT,
+            keyPrefix: "create_lead_email",
+          },
+        },
+      ],
+      corsHeaders,
+    );
 
-    // if (rateLimitResponse) {
-    //   return rateLimitResponse;
-    // }
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
 
     // Validate required fields
     if (
@@ -228,21 +228,15 @@ const handler = async (req: Request): Promise<Response> => {
     let userId = null;
 
     if (authHeader) {
-      try {
-        const supabaseClient = createClient(
-          Deno.env.get("SUPABASE_URL") ?? "",
-          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-          { global: { headers: { Authorization: authHeader } } },
-        );
-        const {
-          data: { user },
-        } = await supabaseClient.auth.getUser();
-        userId = user?.id || null;
-      } catch (authError) {
-        // JWT validation failed or other auth error - continue without user association
-        console.warn("Could not retrieve user from auth header:", authError);
-        userId = null;
-      }
+      const supabaseClient = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+      userId = user?.id || null;
     }
 
     // Create or update lead
