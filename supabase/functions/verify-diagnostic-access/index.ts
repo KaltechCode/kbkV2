@@ -6,16 +6,9 @@ import {
   buildResumeTokenRecord,
 } from "../_shared/resumeToken.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-
-import {
-  verifyTurnstileToken,
-  turnstileErrorResponse,
-} from "../_shared/turnstile.ts";
-
-import clients from "../_shared/emailClient.ts";
 import transporter from "../_shared/emailClient.ts";
 
-const MAX_OTP_ATTEMPTS = 5;
+const MAX_OTP_ATTEMPTS = 10;
 
 // Generic, indistinguishable failure message for all verify_code failure modes
 // (no active OTP, expired, wrong code, locked). This prevents attackers from
@@ -77,6 +70,8 @@ Deno.serve(async (req) => {
 
     // ─── PHASE 1: Send OTP code ───
     if (action === "send_code") {
+      // Rate limit: per-IP 5 / 10 min, per-email 3 / hour
+
       // Check if a paid intake exists for this email
       const { data: intake, error: dbError } = await supabase
         .from("financial_stress_test_intakes")
@@ -90,7 +85,7 @@ Deno.serve(async (req) => {
       if (dbError) {
         console.error("DB error:", dbError);
         return new Response(
-          JSON.stringify({ error: "An error occurred. Please try again." }),
+          JSON.stringify({ error: "Unable to stress test." }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -144,29 +139,27 @@ Deno.serve(async (req) => {
 
       const emailFrom = Deno.env.get("EMAIL_FROM");
 
-      if (transporter) {
-        try {
-          const sentEmail = await transporter.sendMail({
-            from: emailFrom ?? "",
-            to: email,
-            subject: "Your Verification Code — KB&K Financial Diagnostic",
-            replyTo: AppConfig.EMAIL_REPLY_TO,
-            html: buildUnifiedEmail({
-              headerSubtitle: "VERIFICATION REQUIRED",
-              contextStatement:
-                "Use the code below to access your Detailed Financial Diagnostic.",
-              cardContent: `
+      try {
+        const sentEmail = await transporter.send({
+          from: emailFrom ?? "",
+          to: email,
+          subject: "Your Verification Code — KB&K Financial Diagnostic",
+          replyTo: AppConfig.EMAIL_REPLY_TO,
+          html: buildUnifiedEmail({
+            headerSubtitle: "VERIFICATION REQUIRED",
+            contextStatement:
+              "Use the code below to access your Detailed Financial Diagnostic.",
+            cardContent: `
                   <p style="color:#718096;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;margin:0 0 12px 0;text-align:center;font-weight:600;">Your Verification Code</p>
                   <p style="font-size:42px;font-weight:800;color:#0A2240;letter-spacing:8px;font-family:'Courier New',monospace;margin:0;text-align:center;">${otp}</p>
                   <p style="color:#D97706;font-size:13px;font-weight:600;margin:12px 0 0 0;text-align:center;">⏱ This code expires in 10 minutes</p>
                 `,
-              secondaryText: `If you didn't request this code, you can safely ignore this email.${buildResumeFooterHtml(resumeRecord.rawToken, req)}`,
-            }),
-          });
-          console.log("Email sent:", sentEmail);
-        } catch (emailErr) {
-          console.error("Email send error:", emailErr);
-        }
+            secondaryText: `If you didn't request this code, you can safely ignore this email.${buildResumeFooterHtml(resumeRecord.rawToken, req)}`,
+          }),
+        });
+        console.log("Email sent:", sentEmail);
+      } catch (emailErr) {
+        console.error("Email send error:", emailErr);
       }
 
       return new Response(JSON.stringify({ code_sent: true }), {
@@ -178,7 +171,6 @@ Deno.serve(async (req) => {
     // ─── PHASE 2: Verify OTP code ───
     if (action === "verify_code") {
       // Rate limit: per-IP 10/min, per-email 5 attempts / 10 min OTP window
-
       const code = body.code?.trim?.();
 
       if (!code || typeof code !== "string" || code.length !== 6) {
@@ -348,6 +340,8 @@ Deno.serve(async (req) => {
           session_token_expires_at: sessionTokenExpiresAt,
         })
         .eq("id", intake.id);
+
+      // Reset per-email verify rate limit on success
 
       return new Response(
         JSON.stringify({

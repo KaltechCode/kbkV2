@@ -86,17 +86,17 @@ const StressTestDiagnostic = () => {
       );
 
       if (fnError) {
-        setError("Something went wrong. Please try again.");
+        setError("Error Sending OTP. Please try again.");
         return;
       }
 
       if (data?.code_sent) {
         setStep("otp");
       } else {
-        setError("Something went wrong. Please try again.");
+        setError("Opt not sent. Please try again.");
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Error Sending OTP. Please try again.");
     } finally {
       setLoading(false);
     }
