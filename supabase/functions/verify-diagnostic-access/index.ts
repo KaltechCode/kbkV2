@@ -6,17 +6,14 @@ import {
   buildResumeTokenRecord,
 } from "../_shared/resumeToken.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import {
-  getClientIP,
-  applyRateLimits,
-  resetRateLimit,
-} from "../_shared/rateLimit.ts";
+
 import {
   verifyTurnstileToken,
   turnstileErrorResponse,
 } from "../_shared/turnstile.ts";
 
 import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 const MAX_OTP_ATTEMPTS = 5;
 
@@ -73,20 +70,6 @@ Deno.serve(async (req) => {
     }
 
     // ─── Turnstile bot protection (both actions) ───
-    const clientIP = getClientIP(req);
-    if (!turnstileToken || typeof turnstileToken !== "string") {
-      return turnstileErrorResponse(
-        "Bot verification failed. Please refresh and try again.",
-        corsHeaders,
-      );
-    }
-    const turnstileValid = await verifyTurnstileToken(turnstileToken, clientIP);
-    if (!turnstileValid) {
-      return turnstileErrorResponse(
-        "Bot verification failed. Please refresh and try again.",
-        corsHeaders,
-      );
-    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -94,30 +77,6 @@ Deno.serve(async (req) => {
 
     // ─── PHASE 1: Send OTP code ───
     if (action === "send_code") {
-      // Rate limit: per-IP 5 / 10 min, per-email 3 / hour
-      const sendLimitResponse = applyRateLimits(
-        [
-          {
-            key: clientIP,
-            config: {
-              windowMs: 10 * 60 * 1000,
-              maxRequests: 5,
-              keyPrefix: "diag_otp_send_ip",
-            },
-          },
-          {
-            key: email,
-            config: {
-              windowMs: 60 * 60 * 1000,
-              maxRequests: 3,
-              keyPrefix: "diag_otp_send_email",
-            },
-          },
-        ],
-        corsHeaders,
-      );
-      if (sendLimitResponse) return sendLimitResponse;
-
       // Check if a paid intake exists for this email
       const { data: intake, error: dbError } = await supabase
         .from("financial_stress_test_intakes")
@@ -185,9 +144,9 @@ Deno.serve(async (req) => {
 
       const emailFrom = Deno.env.get("EMAIL_FROM");
 
-      if (clients) {
+      if (transporter) {
         try {
-          const sentEmail = await clients.send({
+          const sentEmail = await transporter.sendMail({
             from: emailFrom ?? "",
             to: email,
             subject: "Your Verification Code — KB&K Financial Diagnostic",
@@ -219,28 +178,6 @@ Deno.serve(async (req) => {
     // ─── PHASE 2: Verify OTP code ───
     if (action === "verify_code") {
       // Rate limit: per-IP 10/min, per-email 5 attempts / 10 min OTP window
-      const verifyLimitResponse = applyRateLimits(
-        [
-          {
-            key: clientIP,
-            config: {
-              windowMs: 60 * 1000,
-              maxRequests: 10,
-              keyPrefix: "diag_otp_verify_ip",
-            },
-          },
-          {
-            key: email,
-            config: {
-              windowMs: 10 * 60 * 1000,
-              maxRequests: 5,
-              keyPrefix: "diag_otp_verify_email",
-            },
-          },
-        ],
-        corsHeaders,
-      );
-      if (verifyLimitResponse) return verifyLimitResponse;
 
       const code = body.code?.trim?.();
 
@@ -411,9 +348,6 @@ Deno.serve(async (req) => {
           session_token_expires_at: sessionTokenExpiresAt,
         })
         .eq("id", intake.id);
-
-      // Reset per-email verify rate limit on success
-      resetRateLimit(email, "diag_otp_verify_email");
 
       return new Response(
         JSON.stringify({

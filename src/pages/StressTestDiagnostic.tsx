@@ -5,10 +5,13 @@ import AnimatedSection from "@/components/AnimatedSection";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { ShieldCheck, Loader2, ArrowLeft, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getInvisibleTurnstileToken } from "@/lib/turnstileInvisible";
 
 type Step = "email" | "otp";
 
@@ -32,14 +35,17 @@ const StressTestDiagnostic = () => {
         try {
           const { data, error: fnError } = await supabase.functions.invoke(
             "validate-intake-session",
-            { body: { session_token: sessionToken } }
+            { body: { session_token: sessionToken } },
           );
 
           if (!fnError && data?.valid && data?.intake_id) {
             sessionStorage.setItem("diagnostic_intake_id", data.intake_id);
             // Keep intake_session_token for submission authentication
             if (data.prefill) {
-              sessionStorage.setItem("diagnostic_prefill", JSON.stringify(data.prefill));
+              sessionStorage.setItem(
+                "diagnostic_prefill",
+                JSON.stringify(data.prefill),
+              );
             }
             navigate("/detailed-diagnostic", { replace: true });
             return;
@@ -74,10 +80,9 @@ const StressTestDiagnostic = () => {
 
     setLoading(true);
     try {
-      const turnstile_token = await getInvisibleTurnstileToken();
       const { data, error: fnError } = await supabase.functions.invoke(
         "verify-diagnostic-access",
-        { body: { email: trimmed, action: "send_code", turnstile_token } }
+        { body: { email: trimmed, action: "send_code" } },
       );
 
       if (fnError) {
@@ -109,10 +114,15 @@ const StressTestDiagnostic = () => {
 
     setLoading(true);
     try {
-      const turnstile_token = await getInvisibleTurnstileToken();
       const { data, error: fnError } = await supabase.functions.invoke(
         "verify-diagnostic-access",
-        { body: { email: email.trim().toLowerCase(), action: "verify_code", code: otpValue, turnstile_token } }
+        {
+          body: {
+            email: email.trim().toLowerCase(),
+            action: "verify_code",
+            code: otpValue,
+          },
+        },
       );
 
       if (fnError) {
@@ -127,7 +137,10 @@ const StressTestDiagnostic = () => {
           sessionStorage.setItem("intake_session_token", data.session_token);
         }
         if (data.prefill) {
-          sessionStorage.setItem("diagnostic_prefill", JSON.stringify(data.prefill));
+          sessionStorage.setItem(
+            "diagnostic_prefill",
+            JSON.stringify(data.prefill),
+          );
         }
         navigate("/detailed-diagnostic", { replace: true });
       } else {
@@ -160,8 +173,9 @@ const StressTestDiagnostic = () => {
                   Verify Your Access
                 </h1>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Enter the email address you used when completing your Financial
-                  Stability Stress Test. We'll send a verification code to confirm your identity.
+                  Enter the email address you used when completing your
+                  Financial Stability Stress Test. We'll send a verification
+                  code to confirm your identity.
                 </p>
               </div>
 
@@ -181,7 +195,9 @@ const StressTestDiagnostic = () => {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive leading-snug">{error}</p>
+                  <p className="text-sm text-destructive leading-snug">
+                    {error}
+                  </p>
                 )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -204,8 +220,9 @@ const StressTestDiagnostic = () => {
                   Enter Verification Code
                 </h1>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  We sent a 6-digit code to <strong className="text-foreground">{email}</strong>.
-                  Check your inbox and enter it below.
+                  We sent a 6-digit code to{" "}
+                  <strong className="text-foreground">{email}</strong>. Check
+                  your inbox and enter it below.
                 </p>
               </div>
 
@@ -229,10 +246,16 @@ const StressTestDiagnostic = () => {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-destructive leading-snug text-center">{error}</p>
+                  <p className="text-sm text-destructive leading-snug text-center">
+                    {error}
+                  </p>
                 )}
 
-                <Button type="submit" className="w-full" disabled={loading || otpValue.length !== 6}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || otpValue.length !== 6}
+                >
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
