@@ -19,7 +19,7 @@ import {
   escapeHtmlMultiline,
   isSafeEmailForHref,
 } from "../_shared/escapeHtml.ts";
-import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 const TAG = "[contact-form]";
 
@@ -215,7 +215,7 @@ ${messageDisplay}`;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const { error: emailError } = await clients.send({
+        const { error: emailError } = await transporter.sendMail({
           from: emailFrom,
           to: [emailReplyTo],
           replyTo: email,
@@ -293,7 +293,7 @@ Email Error: ${internalErrorMsg}
 
 Message was saved to the database. Please review and follow up manually.`;
 
-        await clients.send({
+        await transporter.sendMail({
           from: emailFrom,
           to: [emailReplyTo, "kingsley.ekinde@gmail.com"],
           subject: `⚠ SYSTEM ALERT — Contact Form Email Failed | ${email}`,
@@ -354,7 +354,7 @@ If you did not request this message, you can ignore this email.`;
     let autoErrorMsg = "";
 
     try {
-      const { error: autoError } = await clients.send({
+      const { error: autoError } = await transporter.sendMail({
         from: emailFrom,
         to: [email],
         replyTo: emailReplyTo,

@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { stringify } from "jsr:@std/csv";
+
 import { getCorsHeaders } from "../_shared/cors.ts";
 import {
   buildUnifiedEmail,
@@ -421,40 +423,41 @@ Deno.serve(async (req) => {
     );
     console.log(`Top risks: ${top_risk_1}, ${top_risk_2}, ${top_risk_3}`);
 
+    const dataToInsert = {
+      intake_id,
+      client_first_name: intake.first_name,
+      client_last_name: intake.last_name,
+      client_email: intake.email,
+      client_phone: intake.phone,
+      marital_status: intake.marital_status,
+      primary_concern: intake.primary_concern,
+      ...Object.fromEntries(numericFields.map((f) => [f, d[f]])),
+      has_disability_coverage: hasDis,
+      income_score: income,
+      liquidity_score: liquidity,
+      protection_score: protection,
+      retirement_score: retirement,
+      actual_coverage,
+      required_coverage,
+      protection_ratio_value: protection_ratio,
+      debt_ratio_value: debt_ratio,
+      total_debt: totalDebt,
+      essential_expense_ratio,
+      liquidity_months,
+      required_retirement_capital,
+      retirement_funding_ratio,
+      total_score: Math.round(totalScore * 10) / 10,
+      risk_classification: classification,
+      status: "submitted",
+      report_generated_at: new Date().toISOString(),
+      top_risk_1,
+      top_risk_2,
+      top_risk_3,
+    };
     // 5) Save to database
     const { error: insertErr } = await supabase
       .from("detailed_diagnostics")
-      .insert({
-        intake_id,
-        client_first_name: intake.first_name,
-        client_last_name: intake.last_name,
-        client_email: intake.email,
-        client_phone: intake.phone,
-        marital_status: intake.marital_status,
-        primary_concern: intake.primary_concern,
-        ...Object.fromEntries(numericFields.map((f) => [f, d[f]])),
-        has_disability_coverage: hasDis,
-        income_score: income,
-        liquidity_score: liquidity,
-        protection_score: protection,
-        retirement_score: retirement,
-        actual_coverage,
-        required_coverage,
-        protection_ratio_value: protection_ratio,
-        debt_ratio_value: debt_ratio,
-        total_debt: totalDebt,
-        essential_expense_ratio,
-        liquidity_months,
-        required_retirement_capital,
-        retirement_funding_ratio,
-        total_score: Math.round(totalScore * 10) / 10,
-        risk_classification: classification,
-        status: "submitted",
-        report_generated_at: new Date().toISOString(),
-        top_risk_1,
-        top_risk_2,
-        top_risk_3,
-      });
+      .insert(dataToInsert);
 
     if (insertErr) {
       console.error("Insert error:", insertErr.message);
@@ -511,11 +514,20 @@ Deno.serve(async (req) => {
           ratios,
         );
 
+        const columns = Object?.keys(dataToInsert);
+
         await transporter.sendMail({
           from: Deno.env.get("EMAIL_FROM")!,
           to: adminRecipients,
           subject: `New Detailed Diagnostic — ${intake.first_name} ${intake.last_name}`,
           html: adminHTML,
+          attachments: [
+            {
+              filename: "diagnostic-data.csv",
+              content: stringify([dataToInsert], { header: true, columns }),
+              contentType: "text/csv",
+            },
+          ],
         });
 
         console.log("Admin notification email sent");

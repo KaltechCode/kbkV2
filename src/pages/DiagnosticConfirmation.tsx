@@ -1,9 +1,12 @@
 import { usePageTitle } from "@/hooks/usePageTitle";
 import AnimatedSection from "@/components/AnimatedSection";
 import { CheckCircle, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const DiagnosticConfirmation = () => {
   usePageTitle("Diagnostic Submitted");
+
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-secondary flex items-center justify-center px-4">
@@ -15,7 +18,9 @@ const DiagnosticConfirmation = () => {
               Your Detailed Financial Stress Analysis Is Being Prepared
             </h1>
             <p className="text-muted-foreground leading-relaxed">
-              Thank you for completing your comprehensive diagnostic. Your personalized report will be delivered within 24 hours following review.
+              Thank you for completing your comprehensive diagnostic. Your
+              personalized report will be delivered within 24 hours following
+              review.
             </p>
           </div>
 
@@ -26,7 +31,10 @@ const DiagnosticConfirmation = () => {
               "Protection alignment evaluation",
               "Retirement positioning review",
             ].map((item) => (
-              <li key={item} className="flex items-start gap-2.5 text-sm text-foreground">
+              <li
+                key={item}
+                className="flex items-start gap-2.5 text-sm text-foreground"
+              >
                 <CheckCircle className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                 {item}
               </li>
@@ -38,6 +46,13 @@ const DiagnosticConfirmation = () => {
             All information is encrypted and handled confidentially.
           </div>
         </div>
+
+        <button
+          className="bg-primary text-center px-16 py-8 cursor-pointer mx-auto mt-10 rounded-2xl text-lg font-medium text-white hover:bg-primary/90 transition-colors duration-300"
+          onClick={() => navigate("/visualization")}
+        >
+          <p>Go to Dashboard</p>
+        </button>
       </AnimatedSection>
     </div>
   );
