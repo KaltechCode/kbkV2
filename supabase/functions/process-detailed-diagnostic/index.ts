@@ -4,14 +4,10 @@ import {
   buildUnifiedEmail,
   buildAdminNotificationEmail,
 } from "../_shared/emailTemplate.ts";
-import {
-  verifyTurnstileToken,
-  turnstileErrorResponse,
-} from "../_shared/turnstile.ts";
-import { checkRateLimit, getClientIP } from "../_shared/rateLimit.ts";
+
 import { AppConfig } from "../_shared/appConfig.ts";
 import { escapeHtml } from "../_shared/escapeHtml.ts";
-import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 // ── UUID v4 validation ──
 const UUID_RE =
@@ -227,48 +223,6 @@ Deno.serve(async (req) => {
         },
       );
     }
-
-    // ── Turnstile verification ──
-    const clientIP = getClientIP(req);
-    if (!turnstile_token || typeof turnstile_token !== "string") {
-      return turnstileErrorResponse(
-        "Bot verification failed. Please refresh and try again.",
-        corsHeaders,
-      );
-    }
-    const turnstileValid = await verifyTurnstileToken(
-      turnstile_token,
-      clientIP,
-    );
-    if (!turnstileValid) {
-      return turnstileErrorResponse(
-        "Bot verification failed. Please refresh and try again.",
-        corsHeaders,
-      );
-    }
-
-    // ── Rate limiting: 3 req/min per intake_id, 15 req/min per IP ──
-    const intakeRateLimit = checkRateLimit(
-      intake_id,
-      {
-        windowMs: 60 * 1000,
-        maxRequests: 3,
-        keyPrefix: "diag_intake",
-      },
-      corsHeaders,
-    );
-    if (intakeRateLimit) return intakeRateLimit;
-
-    const ipRateLimit = checkRateLimit(
-      clientIP,
-      {
-        windowMs: 60 * 1000,
-        maxRequests: 15,
-        keyPrefix: "diag_ip",
-      },
-      corsHeaders,
-    );
-    if (ipRateLimit) return ipRateLimit;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -513,7 +467,7 @@ Deno.serve(async (req) => {
     }
 
     // 6) Send admin notification email
-    if (clients) {
+    if (transporter) {
       try {
         // ── ADMIN SALE-NOTIFICATION EMAIL ──
         // Intentionally sent to TWO recipients:
@@ -537,7 +491,8 @@ Deno.serve(async (req) => {
         // reply_to is intentionally omitted on this email: it is internal-only,
         // and there is no customer to reply to. The customer's email is included
         // in the email body for outreach if needed.
-        const FOUNDER_ALERT_EMAIL = "kingsley.ekinde@gmail.com";
+        // const FOUNDER_ALERT_EMAIL = "kingsley.ekinde@gmail.com";
+        const FOUNDER_ALERT_EMAIL = "test@kaltechconsultancy.tech";
         const sharedInbox = AppConfig.EMAIL_REPLY_TO;
 
         const adminRecipients = [FOUNDER_ALERT_EMAIL];
@@ -555,7 +510,7 @@ Deno.serve(async (req) => {
           ratios,
         );
 
-        await clients.send({
+        await transporter.sendMail({
           from: Deno.env.get("EMAIL_FROM")!,
           to: adminRecipients,
           subject: `New Detailed Diagnostic — ${intake.first_name} ${intake.last_name}`,
@@ -572,7 +527,7 @@ Deno.serve(async (req) => {
         const userHTML = buildUserConfirmationEmailHTML(intake.first_name);
         const userText = buildUserConfirmationEmailText(intake.first_name);
 
-        await clients.send({
+        await transporter.sendMail({
           from: Deno.env.get("EMAIL_FROM")!,
           to: [intake.email],
           replyTo: AppConfig.EMAIL_REPLY_TO,

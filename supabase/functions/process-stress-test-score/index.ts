@@ -1,13 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildUnifiedEmail } from "../_shared/emailTemplate.ts";
-import { checkRateLimit, getClientIP } from "../_shared/rateLimit.ts";
 import {
   buildResumeFooterHtml,
   buildResumeTokenRecord,
 } from "../_shared/resumeToken.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import clients from "../_shared/emailClient.ts";
+import transporter from "../_shared/emailClient.ts";
 
 // ── UUID v4 validation ──
 const UUID_RE =
@@ -182,28 +181,6 @@ Deno.serve(async (req) => {
     }
 
     // ── Rate limiting: 3 requests/min per intake_id + 20/min per IP as secondary ──
-    const intakeRateLimit = checkRateLimit(
-      intake_id,
-      {
-        windowMs: 60 * 1000,
-        maxRequests: 3,
-        keyPrefix: "process_score_intake",
-      },
-      corsHeaders,
-    );
-    if (intakeRateLimit) return intakeRateLimit;
-
-    const clientIP = getClientIP(req);
-    const ipRateLimit = checkRateLimit(
-      clientIP,
-      {
-        windowMs: 60 * 1000,
-        maxRequests: 20,
-        keyPrefix: "process_score_ip",
-      },
-      corsHeaders,
-    );
-    if (ipRateLimit) return ipRateLimit;
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -323,7 +300,7 @@ Deno.serve(async (req) => {
     }
 
     // 6) Send email
-    if (!clients) {
+    if (!transporter) {
       console.error("Deno mailer not configured");
       // Roll back the email_sent flag since email didn't go out
       await supabase
@@ -374,7 +351,7 @@ Deno.serve(async (req) => {
     );
 
     try {
-      const emailResponse = await clients.send({
+      const emailResponse = await transporter.sendMail({
         from: Deno.env.get("EMAIL_FROM")!,
         to: [intake.email],
         subject: "Your Preliminary Financial Stability Score Is Ready",
