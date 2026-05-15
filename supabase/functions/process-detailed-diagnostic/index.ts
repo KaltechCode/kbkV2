@@ -302,7 +302,7 @@ Deno.serve(async (req) => {
     if (existing) {
       return new Response(
         JSON.stringify({
-          error: "Your detailed diagnostic has already been submitted.",
+          error: "Your detailed diagnostic has already been submitted",
         }),
         {
           status: 409,

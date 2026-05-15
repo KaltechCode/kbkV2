@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { supabase } from "@/integrations/supabase/client";
+
 import {
   AlertTriangle,
   CalendarClock,
@@ -13,6 +14,9 @@ import {
   ShieldCheck,
   UserRound,
 } from "lucide-react";
+
+
+
 
 const Metric = () => {
   usePageTitle("Comprehensive Financial Stress Analysis");
@@ -75,7 +79,11 @@ const Metric = () => {
     );
   }
 
-  if (error) {
+  if (error === "Your detailed diagnostic has already been submitted") {
+    
+return navigate('/target-path'); 
+    
+  } else if(error) {
     return (
       <div className="min-h-screen bg-secondary flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
@@ -189,6 +197,10 @@ const Metric = () => {
     },
   ];
 
+  function RedirectButton() {
+  const navigate = useNavigate();
+
+ 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_#dbeafe_0%,_#f8fafc_35%,_#ffffff_100%)] py-10">
       <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
