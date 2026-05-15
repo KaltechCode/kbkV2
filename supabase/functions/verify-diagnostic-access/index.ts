@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
       const emailFrom = Deno.env.get("EMAIL_FROM");
 
       try {
-        const sentEmail = await transporter.send({
+        const sentEmail = await transporter.sendMail({
           from: emailFrom ?? "",
           to: email,
           subject: "Your Verification Code — KB&K Financial Diagnostic",

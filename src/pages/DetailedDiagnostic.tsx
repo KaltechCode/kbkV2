@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { getInvisibleTurnstileToken } from "@/lib/turnstileInvisible";
 import { useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import AnimatedSection from "@/components/AnimatedSection";
@@ -124,7 +123,9 @@ const CurrencyField = ({
   <div className="space-y-1.5">
     <FieldLabel label={label} tooltip={tooltip} />
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+        $
+      </span>
       <Input
         type="text"
         inputMode="numeric"
@@ -147,8 +148,16 @@ const MicroFeedback = ({ message }: { message: string | null }) => {
   if (!message) return null;
 
   const lower = message.toLowerCase();
-  const isElevated = lower.includes("limited") || lower.includes("consuming") || lower.includes("elevated") || lower.includes("materially below") || lower.includes("gap appears significant");
-  const isModerate = lower.includes("moderate") || lower.includes("partially") || lower.includes("progressing");
+  const isElevated =
+    lower.includes("limited") ||
+    lower.includes("consuming") ||
+    lower.includes("elevated") ||
+    lower.includes("materially below") ||
+    lower.includes("gap appears significant");
+  const isModerate =
+    lower.includes("moderate") ||
+    lower.includes("partially") ||
+    lower.includes("progressing");
 
   let Icon: typeof CheckCircle;
   let color: string;
@@ -167,7 +176,10 @@ const MicroFeedback = ({ message }: { message: string | null }) => {
   return (
     <div className="flex items-start gap-2 mt-3 pl-1">
       <Icon className="h-4 w-4 flex-shrink-0 mt-0.5" style={{ color }} />
-      <p className="text-sm font-medium italic leading-relaxed" style={{ color }}>
+      <p
+        className="text-sm font-medium italic leading-relaxed"
+        style={{ color }}
+      >
         {message}
       </p>
     </div>
@@ -176,112 +188,275 @@ const MicroFeedback = ({ message }: { message: string | null }) => {
 
 // ── Step Components ──
 
-const Step1 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number) => void; disabled: boolean }) => {
-  const ratio = data.monthly_take_home_income > 0
-    ? data.monthly_essential_expenses / data.monthly_take_home_income
-    : null;
+const Step1 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number) => void;
+  disabled: boolean;
+}) => {
+  const ratio =
+    data.monthly_take_home_income > 0
+      ? data.monthly_essential_expenses / data.monthly_take_home_income
+      : null;
 
   let feedback: string | null = null;
   if (ratio !== null && data.monthly_take_home_income > 0) {
-    if (ratio < 0.50) feedback = "Strong cash flow flexibility. This enhances resilience.";
-    else if (ratio >= 0.50 && ratio < 0.65) feedback = "Essential expenses are moderately aligned with take-home income. Flexibility exists but may depend on income stability.";
-    else if (ratio >= 0.65) feedback = "Essential expenses are consuming a large portion of take-home income. This may reduce flexibility during income disruptions.";
+    if (ratio < 0.5)
+      feedback = "Strong cash flow flexibility. This enhances resilience.";
+    else if (ratio >= 0.5 && ratio < 0.65)
+      feedback =
+        "Essential expenses are moderately aligned with take-home income. Flexibility exists but may depend on income stability.";
+    else if (ratio >= 0.65)
+      feedback =
+        "Essential expenses are consuming a large portion of take-home income. This may reduce flexibility during income disruptions.";
   }
 
   return (
     <div className="space-y-5">
-      <CurrencyField label="Client Annual Gross Income" tooltip="Your income before taxes. Used to evaluate leverage and long-term capacity." value={data.client_annual_gross_income} onChange={(v) => update("client_annual_gross_income", v)} disabled={disabled} />
-      <CurrencyField label="Spouse Annual Gross Income" tooltip="Combined earning power influences resilience and opportunity." value={data.spouse_annual_gross_income} onChange={(v) => update("spouse_annual_gross_income", v)} disabled={disabled} />
-      <CurrencyField label="Monthly Take-Home Income" tooltip="What reaches your bank account each month. Stability depends on this." value={data.monthly_take_home_income} onChange={(v) => update("monthly_take_home_income", v)} disabled={disabled} />
-      <CurrencyField label="Monthly Essential Expenses" tooltip="Non-negotiable costs such as housing, food, insurance, transportation." value={data.monthly_essential_expenses} onChange={(v) => update("monthly_essential_expenses", v)} disabled={disabled} />
-      <CurrencyField label="Monthly Lifestyle Expenses" tooltip="Discretionary spending that reflects financial flexibility." value={data.monthly_lifestyle_expenses} onChange={(v) => update("monthly_lifestyle_expenses", v)} disabled={disabled} />
+      <CurrencyField
+        label="Client Annual Gross Income"
+        tooltip="Your income before taxes. Used to evaluate leverage and long-term capacity."
+        value={data.client_annual_gross_income}
+        onChange={(v) => update("client_annual_gross_income", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Spouse Annual Gross Income"
+        tooltip="Combined earning power influences resilience and opportunity."
+        value={data.spouse_annual_gross_income}
+        onChange={(v) => update("spouse_annual_gross_income", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Monthly Take-Home Income"
+        tooltip="What reaches your bank account each month. Stability depends on this."
+        value={data.monthly_take_home_income}
+        onChange={(v) => update("monthly_take_home_income", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Monthly Essential Expenses"
+        tooltip="Non-negotiable costs such as housing, food, insurance, transportation."
+        value={data.monthly_essential_expenses}
+        onChange={(v) => update("monthly_essential_expenses", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Monthly Lifestyle Expenses"
+        tooltip="Discretionary spending that reflects financial flexibility."
+        value={data.monthly_lifestyle_expenses}
+        onChange={(v) => update("monthly_lifestyle_expenses", v)}
+        disabled={disabled}
+      />
       <MicroFeedback message={feedback} />
     </div>
   );
 };
 
-const Step2 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number) => void; disabled: boolean }) => {
+const Step2 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number) => void;
+  disabled: boolean;
+}) => {
   const essentialExp = data.monthly_essential_expenses;
   const liquid = data.emergency_fund_balance + data.other_liquid_savings;
   const months = essentialExp > 0 ? liquid / essentialExp : null;
 
   let feedback: string | null = null;
   if (months !== null) {
-    if (months < 2) feedback = "Liquidity buffer appears limited relative to essential expenses.";
-    else if (months >= 2 && months < 6) feedback = "Liquidity position appears moderately aligned with short-term stability needs.";
-    else if (months >= 6) feedback = "Strong liquidity reserve enhances structural resilience.";
+    if (months < 2)
+      feedback =
+        "Liquidity buffer appears limited relative to essential expenses.";
+    else if (months >= 2 && months < 6)
+      feedback =
+        "Liquidity position appears moderately aligned with short-term stability needs.";
+    else if (months >= 6)
+      feedback = "Strong liquidity reserve enhances structural resilience.";
   }
 
   return (
     <div className="space-y-5">
-      <CurrencyField label="Emergency Fund Balance" tooltip="Readily accessible savings earmarked for unexpected events." value={data.emergency_fund_balance} onChange={(v) => update("emergency_fund_balance", v)} disabled={disabled} />
-      <CurrencyField label="Other Liquid Savings" tooltip="Additional cash or near-cash assets outside emergency reserves." value={data.other_liquid_savings} onChange={(v) => update("other_liquid_savings", v)} disabled={disabled} />
-      <CurrencyField label="Total Retirement Savings" tooltip="Combined value across all retirement accounts (401k, IRA, etc.)." value={data.total_retirement_savings} onChange={(v) => update("total_retirement_savings", v)} disabled={disabled} />
-      <CurrencyField label="Total Non-Retirement Investments" tooltip="Brokerage accounts, real estate equity, or other invested assets." value={data.total_non_retirement_investments} onChange={(v) => update("total_non_retirement_investments", v)} disabled={disabled} />
+      <CurrencyField
+        label="Emergency Fund Balance"
+        tooltip="Readily accessible savings earmarked for unexpected events."
+        value={data.emergency_fund_balance}
+        onChange={(v) => update("emergency_fund_balance", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Other Liquid Savings"
+        tooltip="Additional cash or near-cash assets outside emergency reserves."
+        value={data.other_liquid_savings}
+        onChange={(v) => update("other_liquid_savings", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Total Retirement Savings"
+        tooltip="Combined value across all retirement accounts (401k, IRA, etc.)."
+        value={data.total_retirement_savings}
+        onChange={(v) => update("total_retirement_savings", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Total Non-Retirement Investments"
+        tooltip="Brokerage accounts, real estate equity, or other invested assets."
+        value={data.total_non_retirement_investments}
+        onChange={(v) => update("total_non_retirement_investments", v)}
+        disabled={disabled}
+      />
       <MicroFeedback message={feedback} />
     </div>
   );
 };
 
-const Step3 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number) => void; disabled: boolean }) => {
-  const totalDebt = data.mortgage_balance + data.total_consumer_debt + data.student_loans + data.credit_card_debt;
-  const annualIncome = data.client_annual_gross_income + data.spouse_annual_gross_income;
+const Step3 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number) => void;
+  disabled: boolean;
+}) => {
+  const totalDebt =
+    data.mortgage_balance +
+    data.total_consumer_debt +
+    data.student_loans +
+    data.credit_card_debt;
+  const annualIncome =
+    data.client_annual_gross_income + data.spouse_annual_gross_income;
   const ratio = annualIncome > 0 ? totalDebt / annualIncome : null;
 
   let feedback: string | null = null;
   if (ratio !== null && annualIncome > 0) {
-    if (ratio < 0.30) feedback = "Debt exposure appears manageable relative to income.";
-    else if (ratio >= 0.30 && ratio < 0.45) feedback = "Debt exposure appears moderate relative to income. Structural flexibility may depend on liquidity and income stability.";
-    else if (ratio >= 0.45) feedback = "Debt exposure appears elevated relative to income.";
+    if (ratio < 0.3)
+      feedback = "Debt exposure appears manageable relative to income.";
+    else if (ratio >= 0.3 && ratio < 0.45)
+      feedback =
+        "Debt exposure appears moderate relative to income. Structural flexibility may depend on liquidity and income stability.";
+    else if (ratio >= 0.45)
+      feedback = "Debt exposure appears elevated relative to income.";
   }
 
   return (
     <div className="space-y-5">
-      <CurrencyField label="Mortgage Balance" tooltip="Outstanding principal on your primary residence mortgage." value={data.mortgage_balance} onChange={(v) => update("mortgage_balance", v)} disabled={disabled} />
-      <CurrencyField label="Total Consumer Debt" tooltip="Auto loans, personal loans, and other consumer obligations." value={data.total_consumer_debt} onChange={(v) => update("total_consumer_debt", v)} disabled={disabled} />
-      <CurrencyField label="Student Loans" tooltip="Outstanding student loan balances across all borrowers." value={data.student_loans} onChange={(v) => update("student_loans", v)} disabled={disabled} />
-      <CurrencyField label="Credit Card Debt" tooltip="Total revolving credit card balances carried month to month." value={data.credit_card_debt} onChange={(v) => update("credit_card_debt", v)} disabled={disabled} />
+      <CurrencyField
+        label="Mortgage Balance"
+        tooltip="Outstanding principal on your primary residence mortgage."
+        value={data.mortgage_balance}
+        onChange={(v) => update("mortgage_balance", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Total Consumer Debt"
+        tooltip="Auto loans, personal loans, and other consumer obligations."
+        value={data.total_consumer_debt}
+        onChange={(v) => update("total_consumer_debt", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Student Loans"
+        tooltip="Outstanding student loan balances across all borrowers."
+        value={data.student_loans}
+        onChange={(v) => update("student_loans", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Credit Card Debt"
+        tooltip="Total revolving credit card balances carried month to month."
+        value={data.credit_card_debt}
+        onChange={(v) => update("credit_card_debt", v)}
+        disabled={disabled}
+      />
       <MicroFeedback message={feedback} />
     </div>
   );
 };
 
-const Step4 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number | boolean) => void; disabled: boolean }) => {
-  const totalDebt = data.mortgage_balance + data.total_consumer_debt + data.student_loans + data.credit_card_debt;
-  const annualIncome = data.client_annual_gross_income + data.spouse_annual_gross_income;
+const Step4 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number | boolean) => void;
+  disabled: boolean;
+}) => {
+  const totalDebt =
+    data.mortgage_balance +
+    data.total_consumer_debt +
+    data.student_loans +
+    data.credit_card_debt;
+  const annualIncome =
+    data.client_annual_gross_income + data.spouse_annual_gross_income;
   const required = totalDebt + annualIncome * data.income_replacement_years;
   const actual = data.life_insurance_client + data.life_insurance_spouse;
   const ratio = required > 0 ? actual / required : null;
 
   let feedback: string | null = null;
   if (ratio !== null && required > 0) {
-    if (ratio < 0.50) feedback = "Current protection appears materially below calculated requirement.";
-    else if (ratio >= 0.50 && ratio < 1.00) feedback = "Protection coverage appears partially aligned with calculated need.";
-    else if (ratio >= 1.00) feedback = "Protection aligns with calculated need.";
+    if (ratio < 0.5)
+      feedback =
+        "Current protection appears materially below calculated requirement.";
+    else if (ratio >= 0.5 && ratio < 1.0)
+      feedback =
+        "Protection coverage appears partially aligned with calculated need.";
+    else if (ratio >= 1.0) feedback = "Protection aligns with calculated need.";
   }
 
   return (
     <div className="space-y-5">
-      <CurrencyField label="Life Insurance Coverage (Client)" tooltip="Total death benefit across all policies on the primary earner." value={data.life_insurance_client} onChange={(v) => update("life_insurance_client", v)} disabled={disabled} />
-      <CurrencyField label="Life Insurance Coverage (Spouse)" tooltip="Total death benefit across all policies on the spouse." value={data.life_insurance_spouse} onChange={(v) => update("life_insurance_spouse", v)} disabled={disabled} />
+      <CurrencyField
+        label="Life Insurance Coverage (Client)"
+        tooltip="Total death benefit across all policies on the primary earner."
+        value={data.life_insurance_client}
+        onChange={(v) => update("life_insurance_client", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Life Insurance Coverage (Spouse)"
+        tooltip="Total death benefit across all policies on the spouse."
+        value={data.life_insurance_spouse}
+        onChange={(v) => update("life_insurance_spouse", v)}
+        disabled={disabled}
+      />
       <div className="space-y-1.5">
-        <FieldLabel label="Disability Coverage" tooltip="Whether you have an active income protection or disability insurance policy." />
+        <FieldLabel
+          label="Disability Coverage"
+          tooltip="Whether you have an active income protection or disability insurance policy."
+        />
         <div className="flex items-center gap-3">
           <Switch
             checked={data.has_disability_coverage}
             onCheckedChange={(v) => update("has_disability_coverage", v)}
             disabled={disabled}
           />
-          <span className="text-sm text-muted-foreground">{data.has_disability_coverage ? "Yes" : "No"}</span>
+          <span className="text-sm text-muted-foreground">
+            {data.has_disability_coverage ? "Yes" : "No"}
+          </span>
         </div>
       </div>
       <div className="space-y-1.5">
-        <FieldLabel label="Income Replacement Years" tooltip="Number of years of income you'd want replaced if the primary earner passes." />
+        <FieldLabel
+          label="Income Replacement Years"
+          tooltip="Number of years of income you'd want replaced if the primary earner passes."
+        />
         <Input
           type="text"
           inputMode="numeric"
           placeholder="10"
-          value={data.income_replacement_years ? String(data.income_replacement_years) : ""}
+          value={
+            data.income_replacement_years
+              ? String(data.income_replacement_years)
+              : ""
+          }
           onChange={(e) => {
             const raw = e.target.value;
             if (raw === "" || /^\d+$/.test(raw)) {
@@ -297,26 +472,44 @@ const Step4 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof
   );
 };
 
-const Step5 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number) => void; disabled: boolean }) => {
+const Step5 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number) => void;
+  disabled: boolean;
+}) => {
   const required = data.desired_monthly_retirement_income * 12 * 25;
   const ratio = required > 0 ? data.total_retirement_savings / required : null;
 
   let feedback: string | null = null;
   if (ratio !== null && required > 0) {
     if (ratio < 0.25) feedback = "Long-term funding gap appears significant.";
-    else if (ratio >= 0.25 && ratio < 0.75) feedback = "Retirement funding is progressing but may require optimization.";
-    else if (ratio >= 0.75) feedback = "Retirement funding appears aligned with stated objective.";
+    else if (ratio >= 0.25 && ratio < 0.75)
+      feedback =
+        "Retirement funding is progressing but may require optimization.";
+    else if (ratio >= 0.75)
+      feedback = "Retirement funding appears aligned with stated objective.";
   }
 
   return (
     <div className="space-y-5">
       <div className="space-y-1.5">
-        <FieldLabel label="Expected Retirement Age" tooltip="The age you plan to transition to retirement income." />
+        <FieldLabel
+          label="Expected Retirement Age"
+          tooltip="The age you plan to transition to retirement income."
+        />
         <Input
           type="text"
           inputMode="numeric"
           placeholder="65"
-          value={data.expected_retirement_age ? String(data.expected_retirement_age) : ""}
+          value={
+            data.expected_retirement_age
+              ? String(data.expected_retirement_age)
+              : ""
+          }
           onChange={(e) => {
             const raw = e.target.value;
             if (raw === "" || /^\d+$/.test(raw)) {
@@ -327,17 +520,40 @@ const Step5 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof
           disabled={disabled}
         />
       </div>
-      <CurrencyField label="Desired Monthly Retirement Income" tooltip="The monthly income needed to sustain your lifestyle in retirement." value={data.desired_monthly_retirement_income} onChange={(v) => update("desired_monthly_retirement_income", v)} disabled={disabled} />
-      <CurrencyField label="Annual Retirement Contributions" tooltip="Total yearly contributions to all retirement savings vehicles." value={data.annual_retirement_contributions} onChange={(v) => update("annual_retirement_contributions", v)} disabled={disabled} />
+      <CurrencyField
+        label="Desired Monthly Retirement Income"
+        tooltip="The monthly income needed to sustain your lifestyle in retirement."
+        value={data.desired_monthly_retirement_income}
+        onChange={(v) => update("desired_monthly_retirement_income", v)}
+        disabled={disabled}
+      />
+      <CurrencyField
+        label="Annual Retirement Contributions"
+        tooltip="Total yearly contributions to all retirement savings vehicles."
+        value={data.annual_retirement_contributions}
+        onChange={(v) => update("annual_retirement_contributions", v)}
+        disabled={disabled}
+      />
       <MicroFeedback message={feedback} />
     </div>
   );
 };
 
-const Step6 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof WizardData, v: number) => void; disabled: boolean }) => (
+const Step6 = ({
+  data,
+  update,
+  disabled,
+}: {
+  data: WizardData;
+  update: (k: keyof WizardData, v: number) => void;
+  disabled: boolean;
+}) => (
   <div className="space-y-5">
     <div className="space-y-1.5">
-      <FieldLabel label="Number of Children" tooltip="Children for whom you may fund education or legacy goals." />
+      <FieldLabel
+        label="Number of Children"
+        tooltip="Children for whom you may fund education or legacy goals."
+      />
       <Input
         type="text"
         inputMode="numeric"
@@ -353,8 +569,20 @@ const Step6 = ({ data, update, disabled }: { data: WizardData; update: (k: keyof
         disabled={disabled}
       />
     </div>
-    <CurrencyField label="Estimated College Funding Goal" tooltip="Total target across all children for education funding." value={data.estimated_college_funding_goal} onChange={(v) => update("estimated_college_funding_goal", v)} disabled={disabled} />
-    <CurrencyField label="Current College Savings" tooltip="Total saved in 529 plans or other education-dedicated accounts." value={data.current_college_savings} onChange={(v) => update("current_college_savings", v)} disabled={disabled} />
+    <CurrencyField
+      label="Estimated College Funding Goal"
+      tooltip="Total target across all children for education funding."
+      value={data.estimated_college_funding_goal}
+      onChange={(v) => update("estimated_college_funding_goal", v)}
+      disabled={disabled}
+    />
+    <CurrencyField
+      label="Current College Savings"
+      tooltip="Total saved in 529 plans or other education-dedicated accounts."
+      value={data.current_college_savings}
+      onChange={(v) => update("current_college_savings", v)}
+      disabled={disabled}
+    />
   </div>
 );
 
@@ -374,13 +602,19 @@ const StepProgress = ({ currentStep }: { currentStep: number }) => (
                 isDone
                   ? "bg-primary text-primary-foreground"
                   : isActive
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted text-muted-foreground"
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-muted text-muted-foreground"
               }`}
             >
-              {isDone ? <CheckCircle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+              {isDone ? (
+                <CheckCircle className="h-4 w-4" />
+              ) : (
+                <Icon className="h-4 w-4" />
+              )}
             </div>
-            <span className={`text-[10px] mt-1.5 text-center hidden md:block ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+            <span
+              className={`text-[10px] mt-1.5 text-center hidden md:block ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}
+            >
               {step.title}
             </span>
           </div>
@@ -427,7 +661,10 @@ const DetailedDiagnostic = () => {
           setData((prev) => ({ ...prev, ...snapshot.wizard_data }));
         }
         if (Number.isFinite(snapshot?.current_step)) {
-          const restored = Math.max(0, Math.min(STEPS.length - 1, Number(snapshot.current_step)));
+          const restored = Math.max(
+            0,
+            Math.min(STEPS.length - 1, Number(snapshot.current_step)),
+          );
           setStep(restored);
         }
       } catch {
@@ -447,25 +684,43 @@ const DetailedDiagnostic = () => {
         const updates: Partial<WizardData> = {};
         if (prefill.number_of_children) {
           const childrenStr = String(prefill.number_of_children);
-          const childrenNum = childrenStr === "3+" ? 3 : parseInt(childrenStr, 10);
+          const childrenNum =
+            childrenStr === "3+" ? 3 : parseInt(childrenStr, 10);
           if (!isNaN(childrenNum)) {
             updates.number_of_children = childrenNum;
           }
         }
-        if (prefill.annual_income != null && Number(prefill.annual_income) > 0) {
+        if (
+          prefill.annual_income != null &&
+          Number(prefill.annual_income) > 0
+        ) {
           updates.client_annual_gross_income = Number(prefill.annual_income);
         }
-        if (prefill.monthly_expenses != null && Number(prefill.monthly_expenses) > 0) {
+        if (
+          prefill.monthly_expenses != null &&
+          Number(prefill.monthly_expenses) > 0
+        ) {
           updates.monthly_essential_expenses = Number(prefill.monthly_expenses);
         }
-        if (prefill.mortgage_balance != null && Number(prefill.mortgage_balance) > 0) {
+        if (
+          prefill.mortgage_balance != null &&
+          Number(prefill.mortgage_balance) > 0
+        ) {
           updates.mortgage_balance = Number(prefill.mortgage_balance);
         }
-        if (prefill.consumer_debt != null && Number(prefill.consumer_debt) > 0) {
+        if (
+          prefill.consumer_debt != null &&
+          Number(prefill.consumer_debt) > 0
+        ) {
           updates.total_consumer_debt = Number(prefill.consumer_debt);
         }
-        if (prefill.life_insurance_coverage != null && Number(prefill.life_insurance_coverage) > 0) {
-          updates.life_insurance_client = Number(prefill.life_insurance_coverage);
+        if (
+          prefill.life_insurance_coverage != null &&
+          Number(prefill.life_insurance_coverage) > 0
+        ) {
+          updates.life_insurance_client = Number(
+            prefill.life_insurance_coverage,
+          );
         }
         if (Object.keys(updates).length > 0) {
           // Only set fields not already populated by progress snapshot.
@@ -488,9 +743,12 @@ const DetailedDiagnostic = () => {
     setLoading(false);
   }, [intakeId, sessionToken, navigate]);
 
-  const update = useCallback((key: keyof WizardData, value: number | boolean) => {
-    setData((prev) => ({ ...prev, [key]: value }));
-  }, []);
+  const update = useCallback(
+    (key: keyof WizardData, value: number | boolean) => {
+      setData((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   // Step-based autosave: fire-and-forget when the user advances.
   const saveProgress = useCallback(
@@ -529,10 +787,15 @@ const DetailedDiagnostic = () => {
     setError("");
 
     try {
-      const turnstileToken = await getInvisibleTurnstileToken();
       const { data: result, error: fnError } = await supabase.functions.invoke(
         "process-detailed-diagnostic",
-        { body: { intake_id: intakeId, wizard_data: data, turnstile_token: turnstileToken, session_token: sessionToken } }
+        {
+          body: {
+            intake_id: intakeId,
+            wizard_data: data,
+            session_token: sessionToken,
+          },
+        },
       );
 
       if (fnError || result?.error) {
@@ -543,7 +806,7 @@ const DetailedDiagnostic = () => {
 
       navigate("/diagnostic-confirmation", { replace: true });
     } catch {
-      setError("Something went wrong. Please try again.");
+      setError("Error in process diagnostic. Please try again.");
       setSubmitting(false);
     }
   };
@@ -568,7 +831,8 @@ const DetailedDiagnostic = () => {
               Diagnostic Already Submitted
             </h1>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your detailed diagnostic has already been submitted. Your personalized report will be delivered within 24 hours.
+              Your detailed diagnostic has already been submitted. Your
+              personalized report will be delivered within 24 hours.
             </p>
           </div>
         </AnimatedSection>
@@ -614,9 +878,7 @@ const DetailedDiagnostic = () => {
 
             {stepComponents[step]}
 
-            {error && (
-              <p className="text-sm text-destructive mt-4">{error}</p>
-            )}
+            {error && <p className="text-sm text-destructive mt-4">{error}</p>}
 
             <div className="flex justify-between mt-8 pt-4 border-t border-border">
               <Button
