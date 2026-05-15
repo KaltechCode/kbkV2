@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -19,7 +19,9 @@ const Metric = () => {
   usePageTitle("Comprehensive Financial Stress Analysis");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<
+    string | { type?: string; message?: string }
+  >("");
   const [intakeData, setIntakeData] = useState<any>(null);
 
   const intakeId = sessionStorage.getItem("diagnostic_intake_id");
@@ -76,13 +78,18 @@ const Metric = () => {
     );
   }
 
-  if (error === "Your detailed diagnostic has already been submitted") {
-    return navigate("/target-path");
+  if (error && typeof error !== "string" && error.type) {
+    return <Navigate to="/v" replace />;
   } else if (error) {
+    const errorMessage =
+      typeof error === "string"
+        ? error
+        : error.message || "Something went wrong. Please try again.";
+
     return (
       <div className="min-h-screen bg-secondary flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-card rounded-2xl shadow-lg border border-border p-8 text-center">
-          <p className="text-destructive mb-4">{error}</p>
+          <p className="text-destructive mb-4">{errorMessage}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"

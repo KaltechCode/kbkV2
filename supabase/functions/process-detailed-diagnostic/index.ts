@@ -303,6 +303,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: "Your detailed diagnostic has already been submitted",
+          type: "duplicate_submission",
         }),
         {
           status: 409,

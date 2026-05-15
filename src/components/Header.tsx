@@ -13,7 +13,10 @@ const Header = () => {
   const primaryNav = [
     { name: "Home", href: "/" },
     { name: "Solutions", href: "/services" },
-    { name: "Stress Test", href: "/financial-stability-stress-test" },
+    {
+      name: "Stress Test",
+      href: "/financial-stability-stress-test#intake-form",
+    },
   ];
 
   const secondaryNav = [
@@ -28,8 +31,10 @@ const Header = () => {
   const allNav = [...primaryNav, ...secondaryNav];
 
   const isActive = (path: string) => location.pathname === path;
-  
-  const isBookingConfirmationPage = location.pathname.toLowerCase().startsWith("/booking-confirmed");
+
+  const isBookingConfirmationPage = location.pathname
+    .toLowerCase()
+    .startsWith("/booking-confirmed");
 
   return (
     <header className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b shadow-nav">
@@ -37,7 +42,10 @@ const Header = () => {
         <div className="flex h-20 md:h-24 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2 hover:opacity-90 transition-opacity">
+            <Link
+              to="/"
+              className="flex items-center space-x-2 hover:opacity-90 transition-opacity"
+            >
               <Logo variant="dark" size="header" />
             </Link>
           </div>
@@ -60,8 +68,16 @@ const Header = () => {
           {/* Desktop CTA + Hamburger */}
           <div className="hidden md:flex md:items-center md:space-x-3">
             {!isBookingConfirmationPage && (
-              <Button asChild variant="outline" className="border-2 border-navy-primary text-navy-primary hover:bg-navy-primary hover:text-white shadow-button">
-                <a href="https://tidycal.com/kingsley-ekinde/30-minute-meeting-1vr60yy" target="_blank" rel="noopener noreferrer">
+              <Button
+                asChild
+                variant="outline"
+                className="border-2 border-navy-primary text-navy-primary hover:bg-navy-primary hover:text-white shadow-button"
+              >
+                <a
+                  href="https://tidycal.com/kingsley-ekinde/30-minute-meeting-1vr60yy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   Schedule Your Clarity Call
                 </a>
               </Button>
@@ -115,8 +131,17 @@ const Header = () => {
                   </Link>
                 ))}
                 {!isBookingConfirmationPage && (
-                  <Button asChild variant="outline" className="mt-4 border-2 border-navy-primary text-navy-primary hover:bg-navy-primary hover:text-white">
-                    <a href="https://tidycal.com/kingsley-ekinde/30-minute-meeting-1vr60yy" target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)}>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-4 border-2 border-navy-primary text-navy-primary hover:bg-navy-primary hover:text-white"
+                  >
+                    <a
+                      href="https://tidycal.com/kingsley-ekinde/30-minute-meeting-1vr60yy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setIsOpen(false)}
+                    >
                       Schedule Your Clarity Call
                     </a>
                   </Button>
