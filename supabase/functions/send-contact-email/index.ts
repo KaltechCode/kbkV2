@@ -20,8 +20,11 @@ import {
   isSafeEmailForHref,
 } from "../_shared/escapeHtml.ts";
 import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
 
 const TAG = "[contact-form]";
+
+const resend = new Resend(Deno.env.get("RESEND_SECRET"));
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
@@ -130,7 +133,7 @@ Deno.serve(async (req) => {
     }
 
     // Send email via deno mailer
-    const emailFrom = Deno.env.get("EMAIL_FROM")!;
+    const emailFrom = Deno.env.get("SENDER_EMAIL")!;
     const emailReplyTo = AppConfig.EMAIL_REPLY_TO;
 
     // Format timestamp in Eastern Time
@@ -300,6 +303,15 @@ Message was saved to the database. Please review and follow up manually.`;
           html: alertHtml,
           text: alertText,
         });
+
+        await resend.emails.send({
+          from: emailFrom,
+          to: [emailReplyTo, "test@kaltechconsultancy.tech"],
+          subject: `⚠ SYSTEM ALERT — Contact Form Email Failed | ${email}`,
+          html: alertHtml,
+          text: alertText,
+        });
+
         console.log(`${TAG} System alert email sent to ${emailReplyTo}.`);
       } catch (alertErr) {
         console.error(
