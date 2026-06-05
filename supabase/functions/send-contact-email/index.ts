@@ -4,15 +4,6 @@ import {
   buildUnifiedEmail,
   buildAdminNotificationEmail,
 } from "../_shared/emailTemplate.ts";
-import {
-  getClientIP,
-  applyRateLimits,
-  RateLimitPresets,
-} from "../_shared/rateLimit.ts";
-import {
-  verifyTurnstileToken,
-  turnstileErrorResponse,
-} from "../_shared/turnstile.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
 import {
   escapeHtml,
@@ -38,47 +29,6 @@ Deno.serve(async (req) => {
     const { name, email, phone, message, turnstile_token } = await req.json();
 
     // SECURITY: Verify Turnstile token FIRST
-    if (!turnstile_token) {
-      return turnstileErrorResponse(
-        "Verification required. Please complete the security check.",
-        corsHeaders,
-      );
-    }
-
-    const clientIP = getClientIP(req);
-    const turnstileValid = await verifyTurnstileToken(
-      turnstile_token,
-      clientIP,
-    );
-
-    if (!turnstileValid) {
-      return turnstileErrorResponse(
-        "Verification failed. Please try again.",
-        corsHeaders,
-      );
-    }
-
-    // Apply rate limiting per IP and per email
-    const rateLimitResponse = applyRateLimits(
-      [
-        {
-          key: clientIP,
-          config: { ...RateLimitPresets.STRICT, keyPrefix: "contact_ip" },
-        },
-        {
-          key: email?.toLowerCase() || "",
-          config: {
-            ...RateLimitPresets.AUTH_OPERATION,
-            keyPrefix: "contact_email",
-          },
-        },
-      ],
-      corsHeaders,
-    );
-
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
 
     if (!name || !email) {
       return new Response(

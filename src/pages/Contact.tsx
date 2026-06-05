@@ -13,14 +13,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { getInvisibleTurnstileToken } from "@/lib/turnstileInvisible";
 const Contact = () => {
   usePageTitle("Contact Us");
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    message: ""
+    message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,15 +26,18 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const turnstileToken = await getInvisibleTurnstileToken();
-      const { data, error } = await supabase.functions.invoke("send-contact-email", {
-        body: { ...formData, turnstile_token: turnstileToken },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "send-contact-email",
+        {
+          body: { ...formData },
+        },
+      );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       toast({
         title: "Message Sent!",
-        description: "We'll get back to you within 24 hours to schedule your free consultation."
+        description:
+          "We'll get back to you within 24 hours to schedule your free consultation.",
       });
       setFormData({ name: "", email: "", phone: "", message: "" });
     } catch (err: any) {
@@ -50,13 +51,16 @@ const Contact = () => {
       setIsSubmitting(false);
     }
   };
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
-  return <div className="py-20">
+  return (
+    <div className="py-20">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Header */}
         <section className="mb-16 text-center">
@@ -64,8 +68,8 @@ const Contact = () => {
             Contact Us
           </h1>
           <p className="text-xl text-foreground/80 max-w-3xl mx-auto">
-            Ready to take the first step toward financial security? Get in touch to schedule 
-            your complimentary consultation.
+            Ready to take the first step toward financial security? Get in touch
+            to schedule your complimentary consultation.
           </p>
         </section>
 
@@ -82,25 +86,60 @@ const Contact = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Full Name *</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="mt-1" />
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      required
+                      className="mt-1"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} className="mt-1" />
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="mt-1"
+                    />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="email">Email Address *</Label>
-                  <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} required className="mt-1" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
                 </div>
 
                 <div>
                   <Label htmlFor="message">Message</Label>
-                  <Textarea id="message" name="message" value={formData.message} onChange={handleChange} rows={4} className="mt-1" placeholder="Tell us about your financial goals and how we can help..." />
+                  <Textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    rows={4}
+                    className="mt-1"
+                    placeholder="Tell us about your financial goals and how we can help..."
+                  />
                 </div>
 
-                <Button type="submit" size="lg" disabled={isSubmitting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-button">
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isSubmitting}
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-button"
+                >
                   {isSubmitting ? "Sending..." : "Submit"}
                 </Button>
               </form>
@@ -128,7 +167,9 @@ const Contact = () => {
                   <Mail className="h-6 w-6 text-accent mt-1" />
                   <div>
                     <h4 className="font-medium">Email</h4>
-                    <p className="text-foreground/80">info@kbklegacyshield.com</p>
+                    <p className="text-foreground/80">
+                      info@kbklegacyshield.com
+                    </p>
                   </div>
                 </div>
 
@@ -137,7 +178,8 @@ const Contact = () => {
                   <div>
                     <h4 className="font-medium">Office Address</h4>
                     <p className="text-foreground/80">
-                      4434 Columbia Rd Ste. 101<br />
+                      4434 Columbia Rd Ste. 101
+                      <br />
                       Martinez, GA 30907
                     </p>
                   </div>
@@ -148,7 +190,8 @@ const Contact = () => {
                   <div>
                     <h4 className="font-medium">Business Hours</h4>
                     <p className="text-foreground/80">
-                      Monday - Friday: 9:00 AM - 6:00 PM<br />
+                      Monday - Friday: 9:00 AM - 6:00 PM
+                      <br />
                       Saturday: By Appointment Only
                     </p>
                   </div>
@@ -162,10 +205,11 @@ const Contact = () => {
                   Free 30-Minute Consultation
                 </h3>
                 <p className="text-foreground/80 mb-6">
-                  No obligation. No sales pressure. Just honest advice about your financial future.
+                  No obligation. No sales pressure. Just honest advice about
+                  your financial future.
                 </p>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-accent hover:bg-accent/90 text-accent-foreground shadow-button"
                   onClick={openBookingLink}
                 >
@@ -187,9 +231,18 @@ const Contact = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="w-full h-[450px]">
-                  <iframe src="https://maps.google.com/maps?q=4434+Columbia+Rd+Ste.+101,Martinez,GA+30907&output=embed" width="100%" height="100%" style={{
-                  border: 0
-                }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="KB&K Legacy Shield Office Location" />
+                  <iframe
+                    src="https://maps.google.com/maps?q=4434+Columbia+Rd+Ste.+101,Martinez,GA+30907&output=embed"
+                    width="100%"
+                    height="100%"
+                    style={{
+                      border: 0,
+                    }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="KB&K Legacy Shield Office Location"
+                  />
                 </div>
                 <div className="p-6 bg-gray-light">
                   <div className="flex items-center justify-between flex-wrap gap-4">
@@ -198,12 +251,20 @@ const Contact = () => {
                         KB&K Legacy Shield
                       </h4>
                       <p className="text-foreground/80">
-                        4434 Columbia Rd Ste. 101<br />
+                        4434 Columbia Rd Ste. 101
+                        <br />
                         Martinez, GA 30907
                       </p>
                     </div>
-                    <Button className="bg-accent hover:bg-accent/90 text-accent-foreground" asChild>
-                      <a href="https://www.google.com/maps/dir/?api=1&destination=4434+Columbia+Rd+Ste.+101,Martinez,GA+30907" target="_blank" rel="noopener noreferrer">
+                    <Button
+                      className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                      asChild
+                    >
+                      <a
+                        href="https://www.google.com/maps/dir/?api=1&destination=4434+Columbia+Rd+Ste.+101,Martinez,GA+30907"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Get Directions
                       </a>
                     </Button>
@@ -214,6 +275,7 @@ const Contact = () => {
           </section>
         </AnimatedSection>
       </div>
-    </div>;
+    </div>
+  );
 };
 export default Contact;
