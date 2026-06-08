@@ -4,7 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildUnifiedEmail } from "../_shared/emailTemplate.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
+const resend = new Resend(Deno.env.get("RESEND_SECRET"));
 
 interface EmailReportRequest {
   leadId: string;
@@ -325,8 +326,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const emailResponse = await transporter.sendMail({
-      from: Deno.env.get("EMAIL_FROM")!,
+    const emailResponse = await resend.emails.send({
+      from: Deno.env.get("SENDER_EMAIL")!,
       to: [lead.email],
       subject: emailSubject,
       html: emailHTML,

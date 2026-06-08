@@ -6,7 +6,9 @@ import {
   buildResumeTokenRecord,
 } from "../_shared/resumeToken.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
+
+const resend = new Resend(Deno.env.get("RESEND_SECRET")!);
 
 const MAX_OTP_ATTEMPTS = 10;
 
@@ -137,10 +139,11 @@ Deno.serve(async (req) => {
 
       // Send OTP via deon mail
 
-      const emailFrom = Deno.env.get("EMAIL_FROM");
+      const emailFrom = Deno.env.get("SENDER_EMAIL")!;
+      const emailReplyTo = AppConfig.EMAIL_REPLY_TO;
 
       try {
-        const sentEmail = await transporter.sendMail({
+        const sentEmail = await resend.emails.send({
           from: emailFrom ?? "",
           to: email,
           subject: "Your Verification Code — KB&K Financial Diagnostic",

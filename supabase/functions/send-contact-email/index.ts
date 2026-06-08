@@ -10,7 +10,6 @@ import {
   escapeHtmlMultiline,
   isSafeEmailForHref,
 } from "../_shared/escapeHtml.ts";
-import transporter from "../_shared/emailClient.ts";
 import { Resend } from "npm:resend";
 
 const TAG = "[contact-form]";
@@ -26,7 +25,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { name, email, phone, message, turnstile_token } = await req.json();
+    const { name, email, phone, message } = await req.json();
 
     // SECURITY: Verify Turnstile token FIRST
 
@@ -168,7 +167,7 @@ ${messageDisplay}`;
 
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const { error: emailError } = await transporter.sendMail({
+        const { error: emailError } = await resend.emails.send({
           from: emailFrom,
           to: [emailReplyTo],
           replyTo: email,
@@ -246,7 +245,7 @@ Email Error: ${internalErrorMsg}
 
 Message was saved to the database. Please review and follow up manually.`;
 
-        await transporter.sendMail({
+        await await resend.emails.send({
           from: emailFrom,
           to: [emailReplyTo, "kingsley.ekinde@gmail.com"],
           subject: `⚠ SYSTEM ALERT — Contact Form Email Failed | ${email}`,
@@ -316,7 +315,7 @@ If you did not request this message, you can ignore this email.`;
     let autoErrorMsg = "";
 
     try {
-      const { error: autoError } = await transporter.sendMail({
+      const { error: autoError } = await resend.emails.send({
         from: emailFrom,
         to: [email],
         replyTo: emailReplyTo,

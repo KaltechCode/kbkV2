@@ -108,7 +108,7 @@ const App = () => (
               path="/booking-confirmed/*"
               element={<BookingConfirmedRoute />}
             />
-            <Route path="/visualization*" element={<Metric />} />
+            <Route path="/dashboard/:intakeId" element={<Metric />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

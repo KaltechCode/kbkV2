@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,9 +22,14 @@ const Metric = () => {
   const [error, setError] = useState<
     string | { type?: string; message?: string }
   >("");
+
+  const param = useParams();
+
+  const intakeId = param.intakeId;
+
   const [intakeData, setIntakeData] = useState<any>(null);
 
-  const intakeId = sessionStorage.getItem("diagnostic_intake_id");
+  const intakeID = sessionStorage.getItem("diagnostic_intake_id");
 
   async function fetchExistingData(id: string) {
     if (!id) return null;

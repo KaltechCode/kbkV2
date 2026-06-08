@@ -6,7 +6,9 @@ import {
   buildResumeTokenRecord,
 } from "../_shared/resumeToken.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
+
+const resend = new Resend(Deno.env.get("RESEND_SECRET")!);
 
 // ── UUID v4 validation ──
 const UUID_RE =
@@ -300,7 +302,7 @@ Deno.serve(async (req) => {
     }
 
     // 6) Send email
-    if (!transporter) {
+    if (!resend) {
       console.error("Deno mailer not configured");
       // Roll back the email_sent flag since email didn't go out
       await supabase
@@ -351,8 +353,8 @@ Deno.serve(async (req) => {
     );
 
     try {
-      const emailResponse = await transporter.sendMail({
-        from: Deno.env.get("EMAIL_FROM")!,
+      const emailResponse = await resend.emails.send({
+        from: Deno.env.get("SENDER_EMAIL")!,
         to: [intake.email],
         subject: "Your Preliminary Financial Stability Score Is Ready",
         html: emailHTML,

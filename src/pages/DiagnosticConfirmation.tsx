@@ -2,11 +2,16 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 import AnimatedSection from "@/components/AnimatedSection";
 import { CheckCircle, Lock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const DiagnosticConfirmation = () => {
   usePageTitle("Diagnostic Submitted");
 
   const navigate = useNavigate();
+
+  const [intakeData, setIntakeData] = useState<any>(null);
+
+  const intakeId = sessionStorage.getItem("diagnostic_intake_id");
 
   return (
     <div className="min-h-screen bg-secondary flex items-center justify-center px-4">
@@ -49,7 +54,12 @@ const DiagnosticConfirmation = () => {
 
         <button
           className="bg-primary text-center px-16 py-8 cursor-pointer mx-auto mt-10 rounded-2xl text-lg font-medium text-white hover:bg-primary/90 transition-colors duration-300"
-          onClick={() => navigate("/visualization")}
+          onClick={
+            () =>
+              navigate(
+                `/dashboard/${intakeId}`,
+              ) /* Navigate to dashboard with intakeId param */
+          }
         >
           <p>Go to Dashboard</p>
         </button>

@@ -9,7 +9,8 @@ import {
 
 import { AppConfig } from "../_shared/appConfig.ts";
 import { escapeHtml } from "../_shared/escapeHtml.ts";
-import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
+const resend = new Resend(Deno.env.get("RESEND_SECRET"));
 
 // ── UUID v4 validation ──
 const UUID_RE =
@@ -118,7 +119,10 @@ function buildAdminEmailHTML(
   });
 }
 
-function buildUserConfirmationEmailHTML(firstName: string): string {
+function buildUserConfirmationEmailHTML(
+  firstName: string,
+  intakeId: string,
+): string {
   const bookingUrl =
     "https://tidycal.com/kingsley-ekinde/30-minute-meeting-1vr60yy";
 
@@ -133,6 +137,17 @@ function buildUserConfirmationEmailHTML(firstName: string): string {
         <tr><td style="padding:6px 0;color:#4A5568;font-size:14px;">✓ Our team will review your diagnostic data</td></tr>
         <tr><td style="padding:6px 0;color:#4A5568;font-size:14px;">✓ Your personalized financial analysis report will be prepared</td></tr>
         <tr><td style="padding:6px 0;color:#4A5568;font-size:14px;">✓ You will receive your detailed report within <strong>24 hours</strong></td></tr>
+        <tr><td style="padding:0 32px 24px 32px;text-align:center;">
+        <!--[if mso]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://kbk-v2.vercel.app/visualization" style="height:52px;v-text-anchor:middle;width:340px;" arcsize="12%" strokecolor="#0A2240" fillcolor="#0A2240">
+          <w:anchorlock/>
+          <center style="color:#fff;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">View You Score in Dashboard</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-->
+        <a href=https://kbk-v2.vercel.app/dashboard/${intakeId}" target="_blank" style="display:inline-block;background-color:#0A2240;color:#fff;padding:16px 36px;text-decoration:none;border-radius:8px;font-weight:700;font-size:16px;text-align:center;line-height:1.4;">View Your Score in Dashboard</a>
+        <!--<![endif]-->
+      </td></tr>
       </table>
     `,
     interpretation:
@@ -471,7 +486,7 @@ Deno.serve(async (req) => {
     }
 
     // 6) Send admin notification email
-    if (transporter) {
+    if (resend) {
       try {
         // ── ADMIN SALE-NOTIFICATION EMAIL ──
         // Intentionally sent to TWO recipients:
@@ -516,8 +531,8 @@ Deno.serve(async (req) => {
 
         const columns = Object?.keys(dataToInsert);
 
-        await transporter.sendMail({
-          from: Deno.env.get("EMAIL_FROM")!,
+        await resend.emails.send({
+          from: Deno.env.get("SENDER_EMAIL")!,
           to: adminRecipients,
           subject: `New Detailed Diagnostic — ${intake.first_name} ${intake.last_name}`,
           html: adminHTML,
@@ -537,11 +552,14 @@ Deno.serve(async (req) => {
 
       // 7) Send user confirmation email (non-blocking)
       try {
-        const userHTML = buildUserConfirmationEmailHTML(intake.first_name);
+        const userHTML = buildUserConfirmationEmailHTML(
+          intake.first_name,
+          intake.intake_id,
+        );
         const userText = buildUserConfirmationEmailText(intake.first_name);
 
-        await transporter.sendMail({
-          from: Deno.env.get("EMAIL_FROM")!,
+        await resend.emails.send({
+          from: Deno.env.get("SENDER_EMAIL")!,
           to: [intake.email],
           replyTo: AppConfig.EMAIL_REPLY_TO,
           subject: "Your Financial Diagnostics Submission Has Been Received",

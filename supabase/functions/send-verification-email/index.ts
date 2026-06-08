@@ -8,7 +8,10 @@ import {
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildUnifiedEmail } from "../_shared/emailTemplate.ts";
 import { AppConfig } from "../_shared/appConfig.ts";
-import transporter from "../_shared/emailClient.ts";
+import { Resend } from "npm:resend";
+
+const resend = new Resend(Deno.env.get("RESEND_SECRET")!);
+// Note: This function is only used for sending verification codes, so we can use a more cost-effective email service like Resend instead of the transactional provider used for contact form emails.
 
 interface VerificationEmailRequest {
   email: string;
@@ -148,8 +151,8 @@ const handler = async (req: Request): Promise<Response> => {
         "If you didn't request this verification code, you can safely ignore this email.",
     });
 
-    const emailResponse = await transporter.sendMail({
-      from: Deno.env.get("EMAIL_FROM")!,
+    const emailResponse = await resend.emails.send({
+      from: Deno.env.get("SENDER_EMAIL")!,
       to: [email],
       subject: "Verify Your Email - KB&K Legacy Shield",
       html: emailHTML,
